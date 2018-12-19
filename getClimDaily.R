@@ -21,11 +21,11 @@ plot(bclake)
 plot(bccent, add=TRUE)
 
 ## Get monthly series
-tmp.r = stack("../cru/cl/bc_cru_10min_tmp.nc")
-dtr.r = stack("../cru/cl/bc_cru_10min_dtr.nc")
-pre.r = stack("../cru/cl/bc_cru_10min_pre.nc")
-rhm.r = stack("../cru/cl/bc_cru_10min_reh.nc")
-sun.r = stack("../cru/cl/bc_cru_10min_sun.nc")
+tmp.r = stack("./cru/cl/bc_cru_10min_tmp.nc")
+dtr.r = stack("./cru/cl/bc_cru_10min_dtr.nc")
+pre.r = stack("./cru/cl/bc_cru_10min_pre.nc")
+rhm.r = stack("./cru/cl/bc_cru_10min_reh.nc")
+sun.r = stack("./cru/cl/bc_cru_10min_sun.nc")
 
 ## Region
 tmp.bc = extract(tmp.r, bccent) #- 273.15
