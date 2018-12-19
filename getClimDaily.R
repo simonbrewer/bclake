@@ -55,6 +55,14 @@ dpet = rep(NA, ndays)
 aetpet.df = splashf(dtmp,dpre,dsun,lat=lat,
                       yr=yr, elv=elv)
   
+## Estimate Tdew
+## From humidity.to.dewpoint from the weathermetrics package
+## dewpoint <- (rh/100)^(1/8) * (112 + (0.9 * t)) - 112 + (0.1 * t)
+## This is originally from the source code for the 
+## US National Weather Service's online heat index calculator.
+
+ddew = (drhm/100)^(1/8) * (112 + (0.9 * dtmp)) - 112 + (0.1 * dtmp)
+
 ## Run Morton CRWE
 bcdates = seq.Date(as.Date("1975-01-01"), length.out = 365, by = 1)
 
