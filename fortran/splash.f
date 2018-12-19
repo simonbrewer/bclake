@@ -48,8 +48,9 @@ c  !----------------------------------------------------------------
 
 c******************************************************************************c
         subroutine spin_up_sm( yr, lat, elv, pr, tc, sf,
-     >                            maet,mpet,mcn,mro,msm,
-     >                            daet,dpet,dcn,dro,dsm,sm)
+     >                         maet,mpet,mcn,mro,msm,
+     >                         daet,dpet,dcn,dro,dsm,sm,
+     >                         ddl, dsl )
                 
         !----------------------------------------------------------------
         ! Spins up the daily soil moisture
@@ -76,6 +77,8 @@ c******************************************************************************c
         double precision dcn(365)
         double precision dro(365)
         double precision dsm(365)
+        double precision ddl(365)
+        double precision dsl(365)
 
         double precision maet(12)
         double precision mpet(12)
@@ -100,7 +103,8 @@ c******************************************************************************c
         start_sm = sm
         call run_one_year( lat, elv, yr, pr, tc, sf,
      >                     maet,mpet,mcn,mro,msm,
-     >                     daet,dpet,dcn,dro,dsm,sm)
+     >                     daet,dpet,dcn,dro,dsm,sm,
+     >                     ddl,dsl )
 
         end_sm  = sm
 
@@ -124,7 +128,8 @@ c******************************************************************************c
 c******************************************************************************c
         subroutine run_one_year( lat, elv, yr, pr, tc, sf,
      >                            maet,mpet,mcn,mro,msm,
-     >                            daet,dpet,dcn,dro,dsm,sm)
+     >                            daet,dpet,dcn,dro,dsm,sm,
+     >                            ddl,dsl )
         implicit none
         !----------------------------------------------------------------
         ! Calculates daily and monthly quantities for one year
@@ -143,6 +148,8 @@ c******************************************************************************c
         double precision cn    ! daily condensation (mm)
         double precision ro    ! daily runoff (mm)
         double precision sm    ! soil moisture (=water content, mm)
+        double precision dayl       ! day length (hrs)
+        double precision sunl       ! sunlight length (hrs)
 
         ! local variables
         double precision use_tc ! mean monthly or daily temperature (deg C)
@@ -166,6 +173,8 @@ c******************************************************************************c
         double precision dcn(365)
         double precision dro(365)
         double precision dsm(365)
+        double precision ddl(365)
+        double precision dsl(365)
 
         double precision maet(12)
         double precision mpet(12)
@@ -215,7 +224,7 @@ c******************************************************************************c
         use_pr   = pr(doy)
 
         call run_one_day( lat, elv, doy, yr, use_pr, use_tc, use_sf,
-     >                    aet, pet, sm, cn, ro )
+     >                    aet, pet, sm, cn, ro, dayl, sunl )
 
         !print*,'currentsm ',doy,sm
          ! Collect daily output variables
@@ -226,6 +235,8 @@ c******************************************************************************c
         dcn(doy) = cn
         dro(doy) = ro
         dsm(doy) = sm
+        ddl(doy) = dayl
+        dsl(doy) = sunl
 
         ! Collect monthly output variables
         maet(moy) = maet(moy) + aet
@@ -245,7 +256,7 @@ c******************************************************************************c
 
 c******************************************************************************c
         subroutine run_one_day( lat, elv, doy, yr, pr, tc, sf,
-     >                          aet, pet, sm, cn, ro)
+     >                          aet, pet, sm, cn, ro, dayl, sunl )
         implicit none
         !----------------------------------------------------------------
         ! Calculates daily and monthly quantities for one year
@@ -264,6 +275,8 @@ c******************************************************************************c
         double precision ro    ! daily runoff (mm)
         double precision sm    ! soil moisture (=water content, mm)
         double precision sw    ! evaporative supply rate (mm/h)
+        double precision dayl       ! day length (hrs)
+        double precision sunl       ! sunlight length (hrs)
         double precision kCw, kWm
 
         ! Parameters
@@ -274,7 +287,8 @@ c******************************************************************************c
         sw = kCw * sm / kWm
 
         ! Calculate radiation and evaporation quantities
-        call evap( lat, doy, elv, yr, sf, tc, sw, cn, aet, pet )
+        call evap( lat, doy, elv, yr, sf, tc, sw, cn, aet, pet,
+     >             dayl, sunl )
 
         ! Update soil moisture
         sm = sm + pr + cn - aet
@@ -307,7 +321,7 @@ c******************************************************************************c
 
 c******************************************************************************c
         subroutine evap( lat, doy, elv, yr, sf, tc, sw,
-     >                   cn, aet, pet)
+     >                   cn, aet, pet, dayl, sunl)
         implicit none
         !----------------------------------------------------------------
         ! This subroutine calculates daily radiation and evapotranspiration
@@ -460,6 +474,16 @@ c******************************************************************************c
                 hs = acos(-1.0*ru/rv) *180/pi
         endif
         !write(*,*) "hs:",hs
+
+        ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ! 6.5. Calculate the day length and sunlight hours
+        ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ! Equation 31 from splash_doc.pdf
+        ! d_s = (24 * h_s) / pi
+        dayl = (24 * hs / 180 * pi) / pi
+        !write(*,*) "ds:",dayl
+        sunl = dayl * sf
+        !write(*,*) "sh:",sunl,sf
         
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 7. Calculate daily extraterrestrial solar radiation / irradiation (out_evap%ra), J/m^2

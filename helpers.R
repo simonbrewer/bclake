@@ -23,7 +23,9 @@ splashf <- function(dtemp,dprec,dsun,lat,yr,elv) {
                       dcn = double(365),
                       dro = double(365),
                       dsm = double(365),
-                      sm = double(1))
+                      sm = double(1),
+                      ddl = double(365),
+                      dsl = double(365))
   return(retdata)
 }
 # 
