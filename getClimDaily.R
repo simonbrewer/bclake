@@ -34,7 +34,7 @@ tmn.bc = tmp.bc - (dtr.bc/2)
 tmx.bc = tmp.bc + (dtr.bc/2)
 pre.bc = extract(pre.r, bccent) #* 60*60*24
 rhm.bc = extract(rhm.r, bccent) 
-sun.bc = extract(sun.r, bccent) 
+sun.bc = extract(sun.r, bccent) / 100
 # sf.bc = 1 - (cld.bc / 100)
 
 ## Get daily values
@@ -56,12 +56,11 @@ aetpet.df = splashf(dtmp,dpre,dsun,lat=lat,
                       yr=yr, elv=elv)
   
 ## Run Morton CRWE
-bcdates = seq.Date(as.Date("2001-01-01"), length.out = 365, by = 1)
+bcdates = seq.Date(as.Date("1975-01-01"), length.out = 365, by = 1)
 
-out.df = data.frame(DOY = seq(1:length(dtemp)),
-                    Date = seq.Date(as.Date("2001-01-01"), length.out = 365, by = 1),
-                    Tmax = dtmx, Tmin = dtmn, RH = drhm, Cd = 
-                    daet = aetpet.df$daet, dpet = aetpet.df$dpet,
-                    dcn = aetpet.df$dcn, dro = aetpet.df$dro)
+out.df = data.frame(DOY = seq(1:length(dtmp)),
+                    Date = bcdates,
+                    Tmax = dtmx, Tmin = dtmn, RH = drhm, 
+                    n = aetpet.df$dsl)
 
-write.csv(out.df, "bclake.csv", row.names = FALSE)
+# write.csv(out.df, "bclake.csv", row.names = FALSE)
