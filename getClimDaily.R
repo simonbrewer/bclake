@@ -66,9 +66,22 @@ ddew = (drhm/100)^(1/8) * (112 + (0.9 * dtmp)) - 112 + (0.1 * dtmp)
 ## Run Morton CRWE
 bcdates = seq.Date(as.Date("1975-01-01"), length.out = 365, by = 1)
 
-out.df = data.frame(DOY = seq(1:length(dtmp)),
-                    Date = bcdates,
-                    Tmax = dtmx, Tmin = dtmn, RH = drhm, 
-                    n = aetpet.df$dsl)
+## Using n for sunshine hours
+clim.df = data.frame(Year = as.numeric(format(bcdates, "%Y")),
+                     Month = as.numeric(format(bcdates, "%m")),
+                     Day = as.numeric(format(bcdates, "%d")),
+                     Tmax = dtmx, Tmin = dtmn, 
+                     n = aetpet.df$dsl, Tdew = ddew, Precip = dpre)
 
+clim.in = ReadInputs(varnames = c("Tmax","Tmin","Tdew","n"),
+                     clim.df, 
+                     stopmissing=c(10,10,3))
+data(constants)
+constants$lat = lat
+constants$lat_rad = lat * pi / 180
+constants$Elev = elv
+lake.out <- ET.MortonCRWE(clim.in, constants, ts="monthly",
+                         est="shallow lake ET", solar="sunshine hours", Tdew= TRUE, 
+                         alpha = NULL, message="yes", save.csv="no") 
+plot(lake.out$ET.MonthlyAve)
 # write.csv(out.df, "bclake.csv", row.names = FALSE)
