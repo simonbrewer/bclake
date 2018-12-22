@@ -44,7 +44,9 @@ elv.r = raster("./cru/cl/bc_cru_10min_elv.nc")
 
 ## Output stacks
 dcn.stk = devp.stk = dpet.stk = dpre.stk = 
-  brick(nrows = nrow(dem.r), ncols = ncol(dem.r), nl = 365)
+  brick(nrows = nrow(dem.r), ncols = ncol(dem.r), 
+        xmn = xmin(dem.r), xmx = xmax(dem.r), 
+        ymn = ymin(dem.r), ymx = ymax(dem.r), nl = 365)
 # dpre.stk = array(dim = c(nrow(dem.r) * ncol(dem.r), 365))
 ## Load constants for CRLE run
 data(constants)
