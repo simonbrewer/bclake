@@ -1,3 +1,10 @@
+###############################################################################
+## getClimDaily.R
+## 
+## Basic script to extract data for single year from CRU and run through Splash
+## and Morton's CRWE/CRLE
+###############################################################################
+
 ## Extract climate data and run splash
 require(raster)
 require(rgdal)
@@ -76,10 +83,14 @@ clim.df = data.frame(Year = as.numeric(format(bcdates, "%Y")),
 clim.in = ReadInputs(varnames = c("Tmax","Tmin","Tdew","n"),
                      clim.df, 
                      stopmissing=c(10,10,3))
+
+## Load and update constants for CRLE run
 data(constants)
 constants$lat = lat
 constants$lat_rad = lat * pi / 180
 constants$Elev = elv
+constants$PA = sum(dpre)
+
 lake.out <- ET.MortonCRWE(clim.in, constants, ts="monthly",
                          est="shallow lake ET", solar="sunshine hours", Tdew= TRUE, 
                          alpha = NULL, message="yes", save.csv="no") 
