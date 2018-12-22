@@ -1,0 +1,55 @@
+---
+title: "South African Lake Project"
+author: "Simon Brewer"
+date: "12/22/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Project aiming to simulate water balance for lakes in Nama Karoo region of South Africa
+
+## Region
+
+#### Nama Karoo region
+
+This is the CRU 0.5 degree grid, currently used for climate data:
+
+```{r echo=FALSE, message=FALSE, results='hide', warning=FALSE}
+require(raster)
+require(rgdal)
+dem.r = raster("./cru/cl/bc_cru_10min_elv.nc") * 1000
+bclake = readOGR("~/Documents/grassdata/hydrosheds/bclake/929m lake level.kml")
+plot(dem.r)
+plot(bclake, add=TRUE)
+```
+
+#### BC Lake
+
+This is the 30 arc second grid, currently used for runoff simulation:
+
+```{r echo=FALSE, message=FALSE, results='hide', warning=FALSE}
+dem.r = raster("./dem/bclake_dem.nc")
+plot(dem.r)
+plot(bclake, add=TRUE)
+```
+
+This is the lake basin from GRASS GIS's r.watershed routine. Colored areas indicate the entire basin, green pixels are the lake's drainage watershed. 
+
+```{r echo=FALSE, message=FALSE, results='hide', warning=FALSE}
+bas.r = raster("./dem/bclake_bas.nc")
+ws.r = raster("./dem/bclake_ws.nc")
+x1 = !is.na(ws.r)
+x2 = bas.r==19238
+plot(x1+x2)
+plot(bclake, add=TRUE)
+```
+
+
+## Notes
+
+> "Evaporation and potential transpiration losses from vegetated surfaces and open water are everywhere high in Africa, evaporation from open water being on the order of 1500-2000 mm a year." Grove (1996). African River Discharges and Lake Levels in the 20th Century. In "Limnology, Climatology and Paleoclimatology of the East African Lakes", ed. Johnson and Odada. CRC Press
