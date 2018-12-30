@@ -1,6 +1,8 @@
 ###############################################################################
 ## Helper functions for "runSplash.R"
 dyn.load('fortran/splash.so')
+dyn.load("./fortran/swamCA.so")
+###############################################################################
 
 ###############################################################################
 ## aetpet: Function to calculate aet and pet
@@ -28,7 +30,8 @@ splashf <- function(dtemp,dprec,dsun,lat,yr,elv) {
                       dsl = double(365))
   return(retdata)
 }
-# 
+###############################################################################
+
 ###############################################################################
 # ## DAILY: Function to interpolate from monthly to daily
 # ## Replace with 'approx'?
@@ -40,35 +43,108 @@ daily <- function(mly) {
   
   return(retdata)
 }
-# daily <- function(mly) {
-#   ## Time parameters
-#   midday = c(16,44,75,105,136,166,197,228,258,289,319,350)
-#   daysinmonth = c(31,28,31,30,31,30,31,31,30,31,30,31)
-#   hoursinday = seq(1,24)
-#   dip = pi/180
-#   pid = 180/pi
-#   
-#   dly = rep(NA, 365)
-#   vinc=(mly[1]-mly[12])/31.0
-#   dly[350]=mly[12]
-#   for (i in 351:365) {
-#     dly[i] = dly[(i-1)] + vinc
-#   }
-#   dly[1]=dly[365]+vinc
-#   for (i in 2:15) {
-#     dly[i] = dly[(i-1)] + vinc
-#   }
-#   for (i in 1:11) {
-#     vinc=(mly[(i+1)]-mly[i])/(midday[(i+1)]-midday[i])
-#     dly[midday[i]]=mly[i]
-#     for(j in (midday[i]+1):(midday[i+1]-1)) {
-#       dly[j]=dly[j-1]+vinc
-#       
-#     }
-#   }
-#   return(dly)
-# }
-# 
+###############################################################################
+
+###############################################################################
+## SWAM CA model code
+swamCA_1t <- function(gridx, gridy, dem, mask, cella, outlet,
+                      ppt, evap, runoff, baseflow,
+                      wse, otot, itot, delt,  
+                      mannN=0.05, cellem=50, 
+                      tolwd=0.0001, tolslope=0.001) {
+  
+  simcf = .Fortran("swamca_1t",
+                   m = as.integer(gridx), n = as.integer(gridy),
+                   dem = as.double(dem), 
+                   mask = as.integer(mask), 
+                   cella = as.double(cella), 
+                   outlet = as.integer(outlet), 
+                   ppt = as.double(ppt),
+                   evap = as.double(evap),
+                   runoff = as.double(runoff),
+                   baseflow = as.double(baseflow),
+                   wse = as.double(wse),
+                   otot = as.double(dem), itot = as.double(dem),
+                   dt = as.double(delt), 
+                   mannn = as.double(mannN), cellx = as.double(cellem),
+                   cellem = as.double(cellem), 
+                   tolwd = as.double(tolwd), tolslope = as.double(tolslope))
+  return(simcf)
+  
+}
+###############################################################################
+
+###############################################################################
+## binOutlet
+## Function to find outlet cells
+## Defined as cells next to the border mask, with no lower elevation neighbors
+binOutlet <- function (x) {
+  outlet = FALSE
+  if (max(x) == 1e6) { ## Are we next to an edge?
+    if (x[5] != 1e6) { ## Is the cell an edge cell?
+      if (which.min(x) == 5) {
+        outlet = TRUE
+      }
+    } 
+  } 
+}
+###############################################################################
+
+###############################################################################
+## Function to convert radians to degrees
+rad2deg <- function(x) {
+  x*180/pi
+}
+###############################################################################
+
+###############################################################################
+## Function to convert radians to degrees
+deg2rad <- function(x) {
+  x/180*pi
+}
+###############################################################################
+
+###############################################################################
+## Function to calculate great circle distances
+gcDist <- function(lon1, lat1, lon2, lat2, r=6378) {
+  ## Degree conversion
+  lon1 <- lon1 * pi/180
+  lon2 <- lon2 * pi/180
+  lat1 <- lat1 * pi/180
+  lat2 <- lat2 * pi/180
+  ## Central angle
+  ca <- acos((sin(lat1)*sin(lat2)) + 
+               (cos(lat1)*cos(lat2) * cos(abs(lon1-lon2))))
+  d <- r * ca
+  return(d)
+}
+###############################################################################
+
+###############################################################################
+## Function to lower border next to outlets
+modBorder <- function(outlet, dem, mask) {
+  require(geosphere)
+  oID <- Which(outlet==1, cells=TRUE)
+  if (length(oID) > 0) {
+    for (i in 1:length(oID)) {
+      cen.crds = xyFromCell(mask, oID[i])
+      ngb.rc = adjacent(mask, oID[i], directions = 8)
+      ngb.crds = xyFromCell(mask, ngb.rc[,2])
+      ngb.vals = extract(mask, ngb.rc[,2])
+      ngb.crds <- ngb.crds[which(ngb.vals==1),]
+      ngb.rc <- ngb.rc[which(ngb.vals==1),]
+      ngb.dist = distCosine(cen.crds, ngb.crds)
+      
+      bID <- which.min(ngb.dist)
+      dem[ngb.rc[bID,2]] <- dem[ngb.rc[bID,2]]*-1
+      mask[ngb.rc[bID,2]] <- mask[ngb.rc[bID,2]]*-1
+      
+    }
+    
+  }
+  return(list(dem=dem,mask=mask))
+}
+###############################################################################
 
 ############################################################################
 # Matrix manipulation methods

@@ -38,7 +38,7 @@ plot(dem.r)
 plot(bclake, add=TRUE)
 ```
 
-This is the lake basin from GRASS GIS's r.watershed routine. Colored areas indicate the entire basin, green pixels are the lake's drainage watershed. 
+This is the lake basin from GRASS GIS's `r.watershed` routine. Colored areas indicate the entire basin, green pixels are the lake's drainage watershed. 
 
 ```{r echo=FALSE, message=FALSE, results='hide', warning=FALSE}
 bas.r = raster("./dem/bclake_bas.nc")
@@ -50,6 +50,6 @@ plot(bclake, add=TRUE)
 ```
 
 
-## Notes
+## Notes and quotes
 
 > "Evaporation and potential transpiration losses from vegetated surfaces and open water are everywhere high in Africa, evaporation from open water being on the order of 1500-2000 mm a year." Grove (1996). African River Discharges and Lake Levels in the 20th Century. In "Limnology, Climatology and Paleoclimatology of the East African Lakes", ed. Johnson and Odada. CRC Press
