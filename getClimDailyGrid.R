@@ -41,34 +41,44 @@ pre.r = stack("./cru/cl/bc_cru_10min_pre.nc")
 rhm.r = stack("./cru/cl/bc_cru_10min_reh.nc")
 sun.r = stack("./cru/cl/bc_cru_10min_sun.nc")
 elv.r = raster("./cru/cl/bc_cru_10min_elv.nc")
+ncell.cru = ncell(tmp.r)
 
 ## Output stacks
 dcn.stk = devp.stk = dpet.stk = dpre.stk = 
-  brick(nrows = nrow(dem.r), ncols = ncol(dem.r), 
-        xmn = xmin(dem.r), xmx = xmax(dem.r), 
-        ymn = ymin(dem.r), ymx = ymax(dem.r), nl = 365)
+  brick(nrows = nrow(tmp.r), ncols = ncol(tmp.r), 
+        xmn = xmin(tmp.r), xmx = xmax(tmp.r), 
+        ymn = ymin(tmp.r), ymx = ymax(tmp.r), nl = 365)
 # dpre.stk = array(dim = c(nrow(dem.r) * ncol(dem.r), 365))
 ## Load constants for CRLE run
 data(constants)
 
 ## Main loop
-for (i in 1:ncell.bc) {
+for (i in 1:ncell.cru) {
 # for (i in 1:10) {
     ## Counter
-  print(paste("Doing",i,"of",ncell.bc))
+  print(paste("Doing",i,"of",ncell.cru))
   
   ## Get current cell location
   curr.xy = xyFromCell(dem.r, i)
   
   ## Extract CRU climate
-  tmp.bc = extract(tmp.r, curr.xy) #- 273.15
-  dtr.bc = extract(dtr.r, curr.xy) 
+  # tmp.bc = extract(tmp.r, curr.xy) #- 273.15
+  # dtr.bc = extract(dtr.r, curr.xy) 
+  # tmn.bc = tmp.bc - (dtr.bc/2)
+  # tmx.bc = tmp.bc + (dtr.bc/2)
+  # pre.bc = extract(pre.r, curr.xy) #* 60*60*24
+  # rhm.bc = extract(rhm.r, curr.xy) 
+  # sun.bc = extract(sun.r, curr.xy) / 100
+  # elv = extract(elv.r, curr.xy) * 1000
+
+  tmp.bc = tmp.r[i] #- 273.15
+  dtr.bc = dtr.r[i]
   tmn.bc = tmp.bc - (dtr.bc/2)
   tmx.bc = tmp.bc + (dtr.bc/2)
-  pre.bc = extract(pre.r, curr.xy) #* 60*60*24
-  rhm.bc = extract(rhm.r, curr.xy) 
-  sun.bc = extract(sun.r, curr.xy) / 100
-  elv = extract(elv.r, curr.xy) * 1000
+  pre.bc = pre.r[i] #* 60*60*24
+  rhm.bc = rhm.r[i]
+  sun.bc = sun.r[i] / 100
+  elv = elv.r[i] * 1000
   
   ## Get daily values
   dtmp = daily(c(tmp.bc))$dly
@@ -125,7 +135,7 @@ for (i in 1:ncell.bc) {
   
 }
 
-writeRaster(dpre.stk, "./inputs/dpre.nc", overwrite = TRUE)
-writeRaster(dpet.stk, "./inputs/dpet.nc", overwrite = TRUE)
-writeRaster(dcn.stk, "./inputs/dcn.nc", overwrite = TRUE)
-writeRaster(devp.stk, "./inputs/devp.nc", overwrite = TRUE)
+writeRaster(dpre.stk, "./inputs/dpre.nc", format='CDF', overwrite = TRUE)
+writeRaster(dpet.stk, "./inputs/dpet.nc", format='CDF', overwrite = TRUE)
+writeRaster(dcn.stk, "./inputs/dcn.nc", format='CDF', overwrite = TRUE)
+writeRaster(devp.stk, "./inputs/devp.nc", format='CDF', overwrite = TRUE)
