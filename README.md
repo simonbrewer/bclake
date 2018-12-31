@@ -10,3 +10,4 @@ Ver. 1 20181218
 - Run CRWE
 - ------- UPDATE SWAM CODE --------
 - Check and modify dewpoint temperature calculations
+- Need to simplify the climate calculations - do on CRU grid first ?

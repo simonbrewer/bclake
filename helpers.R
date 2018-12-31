@@ -80,14 +80,28 @@ swamCA_1t <- function(gridx, gridy, dem, mask, cella, outlet,
 ## Defined as cells next to the border mask, with no lower elevation neighbors
 binOutlet <- function (x) {
   outlet = FALSE
-  if (max(x) == 1e6) { ## Are we next to an edge?
-    if (x[5] != 1e6) { ## Is the cell an edge cell?
+  nna = length(is.na(x))
+  if (length(nna) >= 1) { ## Are we next to an edge?
+    if (!is.na(x[5])) { ## Is the cell an edge cell?
       if (which.min(x) == 5) {
         outlet = TRUE
       }
     } 
   } 
+  return(outlet)
 }
+
+## Older version
+# binOutlet <- function (x) {
+#   outlet = FALSE
+#   if (max(x) == 1e6) { ## Are we next to an edge?
+#     if (x[5] != 1e6) { ## Is the cell an edge cell?
+#       if (which.min(x) == 5) {
+#         outlet = TRUE
+#       }
+#     } 
+#   } 
+# }
 ###############################################################################
 
 ###############################################################################
