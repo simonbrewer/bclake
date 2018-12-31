@@ -135,7 +135,7 @@ for (i in 1:ncell.cru) {
   
 }
 
-writeRaster(dpre.stk, "./inputs/dpre.nc", format='CDF', overwrite = TRUE)
-writeRaster(dpet.stk, "./inputs/dpet.nc", format='CDF', overwrite = TRUE)
-writeRaster(dcn.stk, "./inputs/dcn.nc", format='CDF', overwrite = TRUE)
-writeRaster(devp.stk, "./inputs/devp.nc", format='CDF', overwrite = TRUE)
+writeRaster(dpre.stk, "./inputs/dpre_cru.nc", format='CDF', overwrite = TRUE)
+writeRaster(dpet.stk, "./inputs/dpet_cru.nc", format='CDF', overwrite = TRUE)
+writeRaster(dcn.stk, "./inputs/dcn_cru.nc", format='CDF', overwrite = TRUE)
+writeRaster(devp.stk, "./inputs/devp_cru.nc", format='CDF', overwrite = TRUE)
