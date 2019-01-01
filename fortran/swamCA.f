@@ -58,7 +58,7 @@
      >                 cellx, cellem)
 
       call update_depth( m, n, mask, ppt, evap, runoff, baseflow,
-     >                   wse, itot, otot, dt, cella )
+     >                   dem, wse, itot, otot, dt, cella )
 
       end
 
@@ -127,7 +127,7 @@
       !do 20 j=2,(n-1)
       do 20 j=1,n
 
-      if (mask(i,j).eq.1) then ! Check for barrier cells
+      if (mask(i,j).eq.1) then ! Check if cell is in lake watershed
               ! write(*,*) i,j,dem(i,j),ppt(i,j),itot(i,j),wse(i,j)
       if (wse(i,j).gt.dem(i,j)) then ! Check for standing water in cell
       ! Get neighbors
@@ -222,7 +222,7 @@
       ! Subroutine to update water levels
       ! This is equation 13 from Guidolin et al
       subroutine update_depth( m, n, mask, ppt, evap, runoff, baseflow,
-     >                         wse, itot, otot, dt, cella )
+     >                         dem, wse, itot, otot, dt, cella )
 
       !-------------------------------------------------------------------------
       ! Input variables
@@ -232,10 +232,12 @@
       double precision evap( m, n ) ! PPT grid values (mm)
       double precision runoff( m, n ) ! PPT grid values (mm)
       double precision baseflow( m, n ) ! PPT grid values (mm)
+      double precision dem( m, n ) ! Elevation values (m)
       double precision itot( m, n ) ! Cuml. inflow into each cell (m3)
       double precision otot( m, n ) ! Total outflow from each cell (m3)
       double precision dt ! Current time step (s)
       double precision cella( m, n ) ! Cell area (m2)
+      double precision wd ! Current water depth
 
       ! Output variables
       double precision wse( m, n ) ! PPT grid values (mm)
@@ -246,14 +248,26 @@
       do 10 i=2,(m-1)
 
       do 20 j=2,(n-1)
-      if (mask(i,j).eq.1) then ! Check for barrier cells
+
+      if (mask(i,j).eq.1) then ! Check if cell is in lake watershed
+
+      wd = wse(i,j) - dem(i,j)
+      
+      if (wd.gt.0.1) then ! Check for standing water in cell
+        wa = 1.0
+      else
+        wa = 0.0
+      endif ! Standng water check
 
       wse(i,j) = wse(i,j) +
      >           itot(i,j) / cella(i,j) +
-     >           (( ppt(i,j) * 1e-3 ) / ( 60 * 60 *24 )) * dt -
+     >           (( runoff(i,j) * 1e-3 ) / (60*60*24)) * dt * (1-wa) +
+     >           (( baseflow(i,j) * 1e-3 ) / (60*60*24)) * dt * (1-wa) +
+     >           ((( ppt(i,j) * 1e-3 ) / (60*60*24)) -
+     >           (( evap(i,j) * 1e-3 ) / (60*60*24))) * dt * wa -
      >           otot(i,j) / cella(i,j)
 
-      endif
+      endif ! Mask check
 
 20    continue
 10    continue

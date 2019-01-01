@@ -60,7 +60,7 @@ plot(outlet.r)
 
 ###############################################################################
 ## Forcing data
-dpre.stk = brick("./inputs/dpre_bc.nc") * 10
+dpre.stk = brick("./inputs/dpre_bc.nc") #* 10
 dpet.stk = brick("./inputs/dpet_bc.nc")
 devp.stk = brick("./inputs/devp_bc.nc")
 dcn.stk = brick("./inputs/dcn_bc.nc")
