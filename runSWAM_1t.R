@@ -13,7 +13,13 @@ library(raster)
 library(RColorBrewer)
 source("helpers.R")
 
-## Files
+###############################################################################
+## MODEL SETUP
+## Parameters
+delt = 60*60 ## Time step (s)
+bpf = 0 ## Proportion of runoff to put in baseflow [0-1]
+
+## Base files
 dem.r = raster("./dem/bclake_dem.nc")
 bas.r = raster("./dem/bclake_bas.nc")
 ## Clip lake basin
@@ -44,9 +50,61 @@ outlet.r[out.cell] <- 1
 plot(outlet.r)
 
 ###############################################################################
-## Time steps
-delt = 60*60 ## Hourly integration
+## Forcing data
+dpre.stk = brick("./inputs/dpre_bc.nc") * 10
+dpet.stk = brick("./inputs/dpet_bc.nc")
+devp.stk = brick("./inputs/devp_bc.nc")
+dcn.stk = brick("./inputs/dcn_bc.nc")
 
 ###############################################################################
-## Forcing data
-dpre.stk = brick("./inputs/dpre.nc")
+## Calculate runoff
+dro.stk = (dpre.stk + dcn.stk) - dpet.stk
+
+###############################################################################
+## Grid to record total inflow and outflow from each timestep
+itot.r = setValues(dem.r, 0)
+otot.r = setValues(dem.r, 0)
+
+###############################################################################
+## Convert to matrices
+dem = as.matrix(dem.r)
+cella = as.matrix(area.r)
+mask = as.matrix(mask.r)
+outlet = as.matrix(outlet.r)
+itot = as.matrix(itot.r)
+otot = as.matrix(otot.r)
+wse = as.matrix(dem.r)
+
+###############################################################################
+cols <- colorRampPalette(brewer.pal(9,"Blues"))(100)
+
+###############################################################################
+## Convert forcing to matrices
+for (j in 1:5) {
+  
+  for (i in 1:365) {
+    print(paste("Doing",i))
+    
+    pre = as.matrix(raster(dpre.stk, i))
+    evp = as.matrix(raster(devp.stk, i))
+    ro = clamp(raster(dro.stk, i), lower=0, useValues=TRUE)
+    ro = as.matrix(ro)
+    sro = ro * (1-bpf)
+    bro = ro * bpf
+    if (max(sro) >0) {
+      sim.out = swamCA_1t(gridx, gridy, dem, mask, cella, outlet,
+                          pre, evp, sro, bro,
+                          wse, otot, itot, delt,
+                          mannN=0.05, cellem=cellem,
+                          tolwd=0.0001, tolslope=0.001)
+      wse = sim.out$wse
+      print(sum(sim.out$wse-sim.out$dem))
+      wse.r = setValues(dem.r, matrix(sim.out$wse - sim.out$dem, 
+                                      nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+      # plot(wse.r, col=cols)
+      
+    }
+  }
+  
+}
+plot(wse.r, col=cols)

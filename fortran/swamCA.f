@@ -57,7 +57,7 @@
      >                 fluxes, dt, mannn,
      >                 cellx, cellem)
 
-      call update_depth( m, n, ppt, evap, runoff, baseflow,
+      call update_depth( m, n, mask, ppt, evap, runoff, baseflow,
      >                   wse, itot, otot, dt, cella )
 
       end
@@ -127,7 +127,7 @@
       !do 20 j=2,(n-1)
       do 20 j=1,n
 
-      if (mask(i,j).eq.0) then ! Check for barrier cells
+      if (mask(i,j).eq.1) then ! Check for barrier cells
               ! write(*,*) i,j,dem(i,j),ppt(i,j),itot(i,j),wse(i,j)
       if (wse(i,j).gt.dem(i,j)) then ! Check for standing water in cell
       ! Get neighbors
@@ -221,12 +221,13 @@
       !-------------------------------------------------------------------------
       ! Subroutine to update water levels
       ! This is equation 13 from Guidolin et al
-      subroutine update_depth( m, n, ppt, evap, runoff, baseflow,
+      subroutine update_depth( m, n, mask, ppt, evap, runoff, baseflow,
      >                         wse, itot, otot, dt, cella )
 
       !-------------------------------------------------------------------------
       ! Input variables
       integer m,n ! Grid sizes
+      integer mask( m, n ) ! Binary mask (0/1)
       double precision ppt( m, n ) ! PPT grid values (mm)
       double precision evap( m, n ) ! PPT grid values (mm)
       double precision runoff( m, n ) ! PPT grid values (mm)
@@ -245,10 +246,14 @@
       do 10 i=2,(m-1)
 
       do 20 j=2,(n-1)
+      if (mask(i,j).eq.1) then ! Check for barrier cells
+
       wse(i,j) = wse(i,j) +
      >           itot(i,j) / cella(i,j) +
      >           (( ppt(i,j) * 1e-3 ) / ( 60 * 60 *24 )) * dt -
      >           otot(i,j) / cella(i,j)
+
+      endif
 
 20    continue
 10    continue
