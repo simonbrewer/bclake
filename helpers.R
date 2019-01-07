@@ -84,6 +84,7 @@ fpwa <- function(gridx, gridy, dem, ldd, mask) {
                    dem = as.double(dem), 
                    ldd = as.integer(ldd),
                    mask = as.integer(mask),
+                   pwa = integer(gridx*gridy),
                    drain = integer(gridx*gridy)
                    )
   return(pwaout)

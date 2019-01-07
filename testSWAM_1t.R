@@ -61,7 +61,7 @@ plot(outlet.r)
 
 ###############################################################################
 ## Forcing data
-dpre.stk = brick("./inputs/dpre_bc.nc") # * 5
+dpre.stk = brick("./inputs/dpre_bc.nc") #* 5
 dpet.stk = brick("./inputs/dpet_bc.nc")
 devp.stk = brick("./inputs/devp_bc.nc")
 dcn.stk = brick("./inputs/dcn_bc.nc")
@@ -83,16 +83,16 @@ mask = as.matrix(mask.r)
 outlet = as.matrix(outlet.r)
 itot = as.matrix(itot.r)
 otot = as.matrix(otot.r)
-wse = as.matrix(dem.r)
+# wse = as.matrix(dem.r)
 
 ## Test with 5m everywhere
-wse = wse + 5
+# wse = wse + 5
 
 ###############################################################################
 cols <- colorRampPalette(brewer.pal(9,"Blues"))(100)
 
 ###############################################################################
-nyrs = 50
+nyrs = 20
 bclevel = matrix(NA, nrow=365, ncol=nyrs)
 ## Convert forcing to matrices
 for (j in 1:nyrs) {
@@ -139,3 +139,11 @@ plot(wse.r)
 plot(log10(wse.r), col=cols)
 plot(bclake, add=TRUE)
 plot(pit.sp, add=TRUE)
+
+## Output
+
+bclevel.ts = ts(c(bclevel), start = 1, freq=365)
+pdf("bclevel_test.pdf")
+plot(bclevel.ts, xlab = "Time (yrs)", ylab="Lake level (m)")
+dev.off()
+
