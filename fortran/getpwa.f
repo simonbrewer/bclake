@@ -55,11 +55,11 @@
       ! Set drainage to zero
       drain(:,:) = 0
 
-      do 10 i=20,20
-      !do 10 i=1,m
+      !do 10 i=6,6
+      do 10 i=1,m
 
-      do 20 j=20,20
-      !do 20 j=1,n
+      !do 20 j=35,35
+      do 20 j=1,n
 
       if (mask(i,j).eq.1) then ! Check if cell is in lake watershed
         write(*,*) "start",i,j,dem(i,j),ldd(i,j)
@@ -78,7 +78,7 @@
           end if
 
           ! Set drainage output
-          drain(ii,jj) = 1
+          drain(ii,jj) = drain(ii,jj) + 1
 
           ! Get direction
           move = ldd(ii,jj)

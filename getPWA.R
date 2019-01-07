@@ -51,3 +51,5 @@ pwa.out = fpwa(gridx, gridy, dem, ldd, mask)
 
 drain.r = setValues(dem.r, matrix(pwa.out$drain, 
                                 nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(drain.r)
+plot(bclake, add=TRUE)
