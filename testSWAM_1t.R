@@ -26,6 +26,7 @@ bccent = SpatialPoints(cbind(lon,lat))
 ## MODEL SETUP
 ## Parameters
 delt = 60*60 ## Time step (s)
+deltu = 24 ## Number of time steps to run model for
 bpf = 0 ## Proportion of runoff to put in baseflow [0-1]
 
 ## Base files
@@ -60,7 +61,7 @@ plot(outlet.r)
 
 ###############################################################################
 ## Forcing data
-dpre.stk = brick("./inputs/dpre_bc.nc") #* 10
+dpre.stk = brick("./inputs/dpre_bc.nc") # * 5
 dpet.stk = brick("./inputs/dpet_bc.nc")
 devp.stk = brick("./inputs/devp_bc.nc")
 dcn.stk = brick("./inputs/dcn_bc.nc")
@@ -84,15 +85,19 @@ itot = as.matrix(itot.r)
 otot = as.matrix(otot.r)
 wse = as.matrix(dem.r)
 
+## Test with 5m everywhere
+wse = wse + 5
+
 ###############################################################################
 cols <- colorRampPalette(brewer.pal(9,"Blues"))(100)
 
 ###############################################################################
-nyrs = 20
+nyrs = 50
 bclevel = matrix(NA, nrow=365, ncol=nyrs)
 ## Convert forcing to matrices
 for (j in 1:nyrs) {
-  
+
+  print(paste(j,"Lake level:", bclevel[i,j]))
   for (i in 1:365) {
     # print(paste("Doing",i))
     
@@ -104,14 +109,14 @@ for (j in 1:nyrs) {
     bro = ro * bpf
     sim.out = swamCA_1t(gridx, gridy, dem, mask, cella, outlet,
                         pre, evp, sro, bro,
-                        wse, otot, itot, delt,
+                        wse, otot, itot, delt, deltu,
                         mannN=0.05, cellem=cellem,
                         tolwd=0.0001, tolslope=0.001)
     wse = sim.out$wse
     # print(sum(sim.out$wse-sim.out$dem))
     wse.r = setValues(dem.r, matrix(sim.out$wse - sim.out$dem, 
                                     nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
-    print(paste(i,"Max depth:", cellStats(wse.r, max)))
+    # print(paste(i,"Max depth:", cellStats(wse.r, max)))
     # plot(wse.r, col=cols)
     
     bclevel[i,j] = extract(wse.r, bccent)

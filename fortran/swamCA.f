@@ -19,7 +19,7 @@
 
       subroutine swamca_1t( m, n, dem, mask, cella, outlet,
      >                      ppt, evap, runoff, baseflow,
-     >                      wse, otot, itot, dt,
+     >                      wse, otot, itot, dt, dtu,
      >                      mannn, cellx, cellem,
      >                      tolwd, tolslope)
       !-------------------------------------------------------------------------
@@ -34,6 +34,7 @@
       double precision runoff( m, n ) ! Runoff grid values (mm/d)
       double precision baseflow( m, n ) ! Baseflow grid values (mm/d)
       double precision dt ! Current time step (s)
+      integer dtu ! Number of steps to run
       double precision mannn ! Manning's roughness coefficient
       double precision cellx ! Distance between cell centers (HC)
       double precision cellem ! Cell edge length (HC)
@@ -48,9 +49,12 @@
       ! Internal variables
       double precision itot( m, n ) ! Cuml. inflow into each cell (m3)
       double precision otot( m, n ) ! Total outflow from each cell (m3)
+      integer ii ! Counters
 
       !-------------------------------------------------------------------------
-      ! Main loop through grid cells
+      ! Main loop
+
+      do 10 ii=1,dtu
 
       call calc_flows( m, n, dem, mask, cella, 
      >                 wse, otot, itot,
@@ -59,6 +63,8 @@
 
       call update_depth( m, n, mask, ppt, evap, runoff, baseflow,
      >                   dem, wse, itot, otot, dt, cella )
+
+10    continue
 
       end
 

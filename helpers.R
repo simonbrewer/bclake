@@ -1,7 +1,8 @@
 ###############################################################################
 ## Helper functions for "runSplash.R"
-dyn.load('fortran/splash.so')
+dyn.load("./fortran/splash.so")
 dyn.load("./fortran/swamCA.so")
+dyn.load("./fortran/getpwa.so")
 ###############################################################################
 
 ###############################################################################
@@ -49,7 +50,7 @@ daily <- function(mly) {
 ## SWAM CA model code
 swamCA_1t <- function(gridx, gridy, dem, mask, cella, outlet,
                       ppt, evap, runoff, baseflow,
-                      wse, otot, itot, delt,  
+                      wse, otot, itot, delt, deltu,
                       mannN=0.05, cellem=50, 
                       tolwd=0.0001, tolslope=0.001) {
   
@@ -65,11 +66,27 @@ swamCA_1t <- function(gridx, gridy, dem, mask, cella, outlet,
                    baseflow = as.double(baseflow),
                    wse = as.double(wse),
                    otot = as.double(dem), itot = as.double(dem),
-                   dt = as.double(delt), 
+                   dt = as.double(delt), dtu = as.integer(deltu), 
                    mannn = as.double(mannN), cellx = as.double(cellem),
                    cellem = as.double(cellem), 
                    tolwd = as.double(tolwd), tolslope = as.double(tolslope))
   return(simcf)
+  
+}
+###############################################################################
+
+###############################################################################
+## Potential water area code (fortran)
+fpwa <- function(gridx, gridy, dem, ldd, mask) {
+  
+  pwaout = .Fortran("getpwa",
+                   m = as.integer(gridx), n = as.integer(gridy),
+                   dem = as.double(dem), 
+                   ldd = as.integer(ldd),
+                   mask = as.integer(mask),
+                   drain = integer(gridx*gridy)
+                   )
+  return(pwaout)
   
 }
 ###############################################################################
@@ -157,6 +174,17 @@ modBorder <- function(outlet, dem, mask) {
     
   }
   return(list(dem=dem,mask=mask))
+}
+###############################################################################
+
+###############################################################################
+## Function to find pits in DEM
+findPit <- function(x) {
+  pit = FALSE
+  if (which.min(x) == 5) {
+    pit = TRUE
+  }
+  return(pit)
 }
 ###############################################################################
 
