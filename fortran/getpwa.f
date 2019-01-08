@@ -18,7 +18,7 @@
 !-------------------------------------------------------------------------------
 
       subroutine getpwa( m, n, dem, ldd, mask,
-     >                   pwa, drain )
+     >                   pwa, drain, outelev, iout, jout )
               
       !-------------------------------------------------------------------------
       ! Input variables
@@ -32,12 +32,14 @@
       integer ii,jj
       integer edge,move
       integer offx(8),offy(8)
-      double precision gridelev
+      double precision pourelev
 
       ! Outputs
       integer pwa( m, n ) ! Potential WA (0/1)
-      double precision outelv( m, n ) ! Maximum water height in PWA
-      integer drain( m, n )
+      double precision outelev( m, n ) ! Maximum water height in PWA
+      integer drain( m, n ) ! Accumulation raster
+      integer iout( m, n )
+      integer jout( m, n )
 
       ! Set up parameters
       offy = (/+1,0,-1,-1,-1,0,+1,+1/) ! Offsets for movement
@@ -51,7 +53,7 @@
       ! Set all PWA to zero
       pwa(:,:) = 0
       ! Reset all outelv to zero
-      outelv(:,:) = 0.
+      outelev(:,:) = 0.
       ! Set drainage to zero
       drain(:,:) = 0
 
@@ -68,13 +70,16 @@
         jj = j
         edge = 0
         k = 0
-        gridelev = dem(i,j)
+        pourelev = dem(i,j)
 
         do while (edge.eq.0)
-          write(*,*) "current",ii,jj,dem(ii,jj),ldd(ii,jj)
+          !write(*,*) "current",ii,jj,dem(ii,jj),ldd(ii,jj)
           ! Test elevation
-          if (dem(ii,jj).gt.gridelev) then
+          if (dem(ii,jj).gt.pourelev) then
             pwa(i,j) = 1
+            pourelev = dem(ii,jj)
+            iout(i,j) = ii
+            jout(i,j) = jj
           end if
 
           ! Set drainage output
@@ -88,7 +93,7 @@
           ! Test to see if we've reached the edge          
           if (ii.lt.1.or.ii.gt.m.or.jj.lt.1.or.jj.gt.n) then
             edge = 1
-            write(*,*) "edge",ii,jj
+            !write(*,*) "edge",ii,jj
           end if
           if (k.gt.1000) then
             exit
@@ -98,6 +103,7 @@
 
         end do
         
+        outelev(i,j) = pourelev
 
       endif ! Mask cell check
 

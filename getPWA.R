@@ -11,7 +11,8 @@ dem.r = raster("~/Documents/grassdata/hydrosheds/bclake/af_dem_30g.nc")
 ldd.r = raster("~/Documents/grassdata/hydrosheds/bclake/af_ldd_30g.nc")
 
 myext = extent(c(19.9,20.3,-30.95,-30.6))
-plot(crop(dem.r, myext))
+# myext = extent(c(17.5,18.5,-31.5,-31))
+plot(crop(ldd.r, myext))
 
 dem.r = crop(dem.r, myext)
 ldd.r = crop(ldd.r, myext)
@@ -40,7 +41,13 @@ plot(bclake, add=TRUE)
 offx = c(1, 0, -1, -1, -1, 0, 1, 1) ## cols
 offy = c(-1, -1, -1, 0, 1, 1, 1, 0) ## rows
 
+## Buld mask
 mask.r = setValues(dem.r, 1)
+mask.r[is.na(dem.r)] <- 0
+## Set NAs to -9999
+dem.r[is.na(dem.r)] <- -9999
+ldd.r[is.na(ldd.r)] <- -9999
+
 gridx = nrow(dem.r)
 gridy = ncol(dem.r)
 dem = as.matrix(dem.r)
@@ -57,4 +64,19 @@ plot(bclake, add=TRUE)
 drain.r = setValues(dem.r, matrix(pwa.out$drain, 
                                 nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
 plot(drain.r)
+plot(bclake, add=TRUE)
+
+outelev.r = setValues(dem.r, matrix(pwa.out$outelev, 
+                                  nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(outelev.r-dem.r)
+plot(bclake, add=TRUE)
+
+iout.r = setValues(dem.r, matrix(pwa.out$iout, 
+                                 nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(iout.r)
+plot(bclake, add=TRUE)
+
+jout.r = setValues(dem.r, matrix(pwa.out$jout, 
+                                 nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(jout.r)
 plot(bclake, add=TRUE)
