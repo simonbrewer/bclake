@@ -58,6 +58,23 @@
       offx = (/-1,-1,-1,0,+1,+1,+1,0/)
 
       !-------------------------------------------------------------------------
+      ! Convert all forcings to m3/s
+      do 920 i=1,m
+      do 930 j=1,n
+
+      if (mask(i,j).eq.1) then ! Check if cell is in lake watershed
+        ! temporary variables to check for units
+        runoff(i,j) = (runoff(i,j) * 1e-3) / (60*60*24)
+        baseflow(i,j) = (baseflow(i,j) * 1e-3) / (60*60*24)
+        ppt(i,j) = (ppt(i,j) * 1e-3) / (60*60*24)
+        evap(i,j) = (evap(i,j) * 1e-3) / (60*60*24)
+
+      end if ! Mask loop
+
+930   continue
+920   continue
+        
+      !-------------------------------------------------------------------------
       ! Main loop
 
       do 10 kk=1,dtu
@@ -120,9 +137,18 @@
         ppt_tmp = (ppt(i,j) * 1e-3) / ((60*60*24) * dt) * cella(i,j)
         evap_tmp = (evap(i,j) * 1e-3) / ((60*60*24) * dt) * cella(i,j)
 
-        dwv = ( (ro_tmp + bf_tmp) * (1 - wa(i,j)) ) +
-     >        ( (ppt_tmp - evap_tmp) * wa(i,j) ) +
+        dwv = ( (runoff(i,j) + baseflow(i,j)) 
+     >          * (1 - wa(i,j)) * cella(i,j) ) +
+     >        ( (ppt(i,j) - evap(i,j)) 
+     >          * wa(i,j) * cella(i,j) ) +
      >        ( fin(i,j) - fout(i,j) )
+
+        wvl(i,j) = wvl(i,j) + dwv
+        wse(i,j) = wvl(i,j) / cella(i,j)
+
+        if (wse(i,j).gt.0) then
+          war(i,j) = max(wse(i,j), 1.)
+        end if
  
 
       end if ! Mask loop
