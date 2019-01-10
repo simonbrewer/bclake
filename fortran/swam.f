@@ -17,7 +17,7 @@
       subroutine swam_1t( m, n, dem, ldd, outelv,
      >                    mask, cella, celld, 
      >                    ppt, evap, runoff, baseflow,
-     >                    cellm, dt, dtu, u, wvl, war, wse )
+     >                    dt, dtu, u, wvl, wse, war )
       !-------------------------------------------------------------------------
       ! Input variables
       integer m,n ! Grid sizes
@@ -77,7 +77,7 @@
       !-------------------------------------------------------------------------
       ! Main loop
 
-      do 10 kk=1,dtu
+      do 10 k=1,dtu
 
       !-------------------------------------------------------------------------
       ! Start by estimating inflow and outflow
@@ -110,8 +110,13 @@
         ! Get wei and wed
         wel = wse(i,j) + dem(i,j)
         wed = wse(ii,jj) + dem(ii,jj)
-        fout(i,j) = max((wel-wed)*cella(i,j),0.) * u/celld(i,j)
-        write(*,*) i,j,fout(i,j)
+        if ((wse(i,j)-dem(i,j)).gt.0.) then
+          fout(i,j) = max((wel-wed)*cella(i,j),0.) * u/celld(i,j)
+        end if
+        if (i.eq.60.and.j.eq.11) then
+                write(*,*) k,i,j,edge,wel,wed,fout(i,j)
+                write(*,*) wse(i,j),dem(i,j)
+        end if
 
         ! If not an edge, then update inflow and outflow
         if (edge.eq.0) then
@@ -138,16 +143,16 @@
         evap_tmp = (evap(i,j) * 1e-3) / ((60*60*24) * dt) * cella(i,j)
 
         dwv = ( (runoff(i,j) + baseflow(i,j)) 
-     >          * (1 - wa(i,j)) * cella(i,j) ) +
+     >          * (1 - war(i,j)) * cella(i,j) ) +
      >        ( (ppt(i,j) - evap(i,j)) 
-     >          * wa(i,j) * cella(i,j) ) +
+     >          * war(i,j) * cella(i,j) ) +
      >        ( fin(i,j) - fout(i,j) )
 
-        wvl(i,j) = wvl(i,j) + dwv
+        wvl(i,j) = max(wvl(i,j) + dwv, 0.)
         wse(i,j) = wvl(i,j) / cella(i,j)
 
         if (wse(i,j).gt.0) then
-          war(i,j) = max(wse(i,j), 1.)
+          war(i,j) = min(wse(i,j), 1.)
         end if
  
 

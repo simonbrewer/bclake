@@ -1,8 +1,8 @@
 ###############################################################################
-## Version of the SWAM model based on original code
+## Version of the SWAM model using hydroCA to move water around
 ##
-## Ref: M.T. Coe (1998). A linked global model of terrestrial hydrologic processes:
-## Simulation of modern rivers, lakes, and wetlands. JGR, 103, D8, 8885-8899
+## Ref: Guidolin et al. (2016). A weighted cellular automata 2D inundation model 
+## for rapid flood analysis Env. Mod. Soft., 84, 378-394
 ##
 ###############################################################################
 
@@ -28,24 +28,21 @@ bccent = SpatialPoints(cbind(lon,lat))
 delt = 60*60 ## Time step (s)
 deltu = 24 ## Number of time steps to run model for
 bpf = 0 ## Proportion of runoff to put in baseflow [0-1]
-effvol = 0.003 
 
 ## Base files
 dem.r = raster("./dem/bclake_dem.nc")
 bas.r = raster("./dem/bclake_bas.nc")
-ldd.r = raster("~/Documents/grassdata/hydrosheds/bclake/af_ldd_30g.nc")
-ldd.r = crop(ldd.r, extent(dem.r))
-
 ## Clip lake basin
 mask.r = bas.r == 19238
 
 ###############################################################################
 ## Estimate cell areas
 area.r = area(dem.r) * 1e6
-
+## Calculate slope
+slope.r = terrain(dem.r, "slope", unit="degrees")
 ## Distance between cells (set as constant)
 ## Needs to be calculated in fortran from coordinates
-dist.r =  setValues(dem.r, 857) ## Approximately 857m cell centers
+cellem = 857 ## Approximately 857m cell centers
 
 ###############################################################################
 ## Grid sizes for outout
@@ -60,10 +57,11 @@ out.sp = SpatialPoints(cbind(out.x,out.y))
 out.cell <- cellFromXY(dem.r, out.sp)
 outlet.r = setValues(dem.r, 0)
 outlet.r[out.cell] <- 1
+plot(outlet.r)
 
 ###############################################################################
 ## Forcing data
-dpre.stk = brick("./inputs/dpre_bc.nc") * 20
+dpre.stk = brick("./inputs/dpre_bc.nc") #* 5
 dpet.stk = brick("./inputs/dpet_bc.nc")
 devp.stk = brick("./inputs/devp_bc.nc")
 dcn.stk = brick("./inputs/dcn_bc.nc")
@@ -73,20 +71,19 @@ dcn.stk = brick("./inputs/dcn_bc.nc")
 dro.stk = (dpre.stk + dcn.stk) - dpet.stk
 
 ###############################################################################
-## Water storage rasters
-wse.r = wvl.r = war.r = setValues(dem.r, 0)
+## Grid to record total inflow and outflow from each timestep
+itot.r = setValues(dem.r, 0)
+otot.r = setValues(dem.r, 0)
 
 ###############################################################################
 ## Convert to matrices
 dem = as.matrix(dem.r)
-ldd = as.matrix(ldd.r)  # Needs changing
-outelev = as.matrix(dem.r)  # Needs changing
-mask = as.matrix(mask.r)
 cella = as.matrix(area.r)
-celld = as.matrix(dist.r)
-wvl = as.matrix(wvl.r)
-wse = as.matrix(wse.r)
-war = as.matrix(war.r)
+mask = as.matrix(mask.r)
+outlet = as.matrix(outlet.r)
+itot = as.matrix(itot.r)
+otot = as.matrix(otot.r)
+# wse = as.matrix(dem.r)
 
 ## Test with 5m everywhere
 # wse = wse + 5
@@ -95,14 +92,14 @@ war = as.matrix(war.r)
 cols <- colorRampPalette(brewer.pal(9,"Blues"))(100)
 
 ###############################################################################
-nyrs = 5
+nyrs = 20
 bclevel = matrix(NA, nrow=365, ncol=nyrs)
 ## Convert forcing to matrices
 for (j in 1:nyrs) {
-  
+
   print(paste(j,"Lake level:", bclevel[i,j]))
   for (i in 1:365) {
-    print(paste("Doing",j,i))
+    # print(paste("Doing",i))
     
     pre = as.matrix(raster(dpre.stk, i))
     evp = as.matrix(raster(devp.stk, i))
@@ -110,16 +107,14 @@ for (j in 1:nyrs) {
     ro = as.matrix(ro)
     sro = ro * (1-bpf)
     bro = ro * bpf
-    sim.out = swam_1t(gridx, gridy, dem, ldd, outelev, 
-                      mask, cella, celld,
-                      pre, evp, sro, bro,
-                      delt, deltu, effvol,
-                      wvl, wse, war)
-    
-    wvl = sim.out$wvl
+    sim.out = swamCA_1t(gridx, gridy, dem, mask, cella, outlet,
+                        pre, evp, sro, bro,
+                        wse, otot, itot, delt, deltu,
+                        mannN=0.05, cellem=cellem,
+                        tolwd=0.0001, tolslope=0.001)
     wse = sim.out$wse
     # print(sum(sim.out$wse-sim.out$dem))
-    wse.r = setValues(dem.r, matrix(sim.out$wse, 
+    wse.r = setValues(dem.r, matrix(sim.out$wse - sim.out$dem, 
                                     nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
     # print(paste(i,"Max depth:", cellStats(wse.r, max)))
     # plot(wse.r, col=cols)
