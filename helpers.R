@@ -100,7 +100,9 @@ swam_1t <- function(gridx, gridy, dem, ldd, outelev,
                    u = as.double(effvol), 
                    wvl = as.double(wvl), 
                    wse = as.double(wse), 
-                   war = as.double(war))
+                   war = as.double(war), 
+                   fin = double(gridx*gridy), 
+                   fout = double(gridx*gridy))
   return(simcf)
   
 }

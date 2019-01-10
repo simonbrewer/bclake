@@ -63,7 +63,7 @@ outlet.r[out.cell] <- 1
 
 ###############################################################################
 ## Forcing data
-dpre.stk = brick("./inputs/dpre_bc.nc") * 20
+dpre.stk = brick("./inputs/dpre_bc.nc") * 5
 dpet.stk = brick("./inputs/dpet_bc.nc")
 devp.stk = brick("./inputs/devp_bc.nc")
 dcn.stk = brick("./inputs/dcn_bc.nc")
@@ -119,6 +119,7 @@ for (j in 1:nyrs) {
     wvl = sim.out$wvl
     wse = sim.out$wse
     # print(sum(sim.out$wse-sim.out$dem))
+    print(max(sim.out$fout))
     wse.r = setValues(dem.r, matrix(sim.out$wse, 
                                     nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
     # print(paste(i,"Max depth:", cellStats(wse.r, max)))
@@ -131,6 +132,11 @@ for (j in 1:nyrs) {
 plot(wse.r, col=cols)
 plot(bclake, add=TRUE)
 
+war.r = setValues(dem.r, matrix(sim.out$war, 
+                                nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(war.r, col=cols)
+plot(bclake, add=TRUE)
+stop()
 plot(log10(wse.r), col=cols)
 plot(bclake, add=TRUE)
 
