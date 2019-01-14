@@ -4,6 +4,7 @@ dyn.load("./fortran/splash.so")
 dyn.load("./fortran/swamCA.so")
 dyn.load("./fortran/getpwa.so")
 dyn.load("./fortran/swam.so")
+dyn.load("./fortran/swam10.so")
 ###############################################################################
 
 ###############################################################################
@@ -85,6 +86,38 @@ swam_1t <- function(gridx, gridy, dem, ldd, outelev,
                     wvl, wse, war) {
   
   simcf = .Fortran("swam_1t",
+                   m = as.integer(gridx), n = as.integer(gridy),
+                   dem = as.double(dem), 
+                   ldd = as.integer(ldd), 
+                   outelv = as.double(outelev), 
+                   mask = as.integer(mask), 
+                   cella = as.double(cella), 
+                   celld = as.double(celld), 
+                   ppt = as.double(ppt),
+                   evap = as.double(evap),
+                   runoff = as.double(runoff),
+                   baseflow = as.double(baseflow),
+                   dt = as.double(delt), dtu = as.integer(deltu), 
+                   u = as.double(effvol), 
+                   wvl = as.double(wvl), 
+                   wse = as.double(wse), 
+                   war = as.double(war), 
+                   fin = double(gridx*gridy), 
+                   fout = double(gridx*gridy))
+  return(simcf)
+  
+}
+###############################################################################
+
+###############################################################################
+## SWAM original model code
+swam_10 <- function(gridx, gridy, dem, ldd, outelev, 
+                    mask, cella, celld,
+                    ppt, evap, runoff, baseflow,
+                    delt, deltu, effvol,
+                    wvl, wse, war) {
+  
+  simcf = .Fortran("swam_10",
                    m = as.integer(gridx), n = as.integer(gridy),
                    dem = as.double(dem), 
                    ldd = as.integer(ldd), 

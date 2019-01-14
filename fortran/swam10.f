@@ -14,7 +14,7 @@
 ! updates time and linear reservoir code
 !-------------------------------------------------------------------------------
 
-      subroutine swam_1t( m, n, dem, ldd, outelv,
+      subroutine swam_10( m, n, dem, ldd, outelv,
      >                    mask, cella, celld, 
      >                    ppt, evap, runoff, baseflow,
      >                    dt, dtu, u, wvl, wse, war, fin, fout )

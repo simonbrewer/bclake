@@ -4,6 +4,7 @@
 ## Ref: M.T. Coe (1998). A linked global model of terrestrial hydrologic processes:
 ## Simulation of modern rivers, lakes, and wetlands. JGR, 103, D8, 8885-8899
 ##
+## This does 10 day integration based on annual averages
 ###############################################################################
 
 ###############################################################################
@@ -25,10 +26,10 @@ bccent = SpatialPoints(cbind(lon,lat))
 ###############################################################################
 ## MODEL SETUP
 ## Parameters
-delt = 60*60 ## Time step (s)
-deltu = 24 ## Number of time steps to run model for
+delt = 60*60*24*10 ## Time step (s)
+deltu = 36 ## Number of time steps to run model for (360 day year)
 bpf = 0 ## Proportion of runoff to put in baseflow [0-1]
-effvol = 0.3 
+effvol = 0.003 ## Cole 1998
 
 ## Base files
 dem.r = raster("./dem/bclake_dem.nc")
@@ -63,14 +64,22 @@ outlet.r[out.cell] <- 1
 
 ###############################################################################
 ## Forcing data
-dpre.stk = brick("./inputs/dpre_bc.nc") * 5
+dpre.stk = brick("./inputs/dpre_bc.nc") * 10
 dpet.stk = brick("./inputs/dpet_bc.nc")
 devp.stk = brick("./inputs/devp_bc.nc")
 dcn.stk = brick("./inputs/dcn_bc.nc")
 
 ###############################################################################
+## Annual averages
+dID = c(rep(1:36, each=10), rep(36,5))
+dpre.avg = stackApply(dpre.stk, dID, mean)
+dpet.avg = stackApply(dpet.stk, dID, mean)
+devp.avg = stackApply(devp.stk, dID, mean)
+dcn.avg = stackApply(dcn.stk, dID, mean)
+
+###############################################################################
 ## Calculate runoff
-dro.stk = (dpre.stk + dcn.stk) - dpet.stk
+dro.avg = (dpre.avg + dcn.avg) - dpet.avg
 
 ###############################################################################
 ## Water storage rasters
@@ -96,23 +105,23 @@ cols <- colorRampPalette(brewer.pal(9,"Blues"))(100)
 
 ###############################################################################
 nyrs = 5
-bclevel = matrix(NA, nrow=365, ncol=nyrs)
+bclevel = matrix(NA, nrow=deltu, ncol=nyrs)
 ## Convert forcing to matrices
 for (j in 1:nyrs) {
   
-  for (i in 1:365) {
+  for (i in 1:deltu) {
     print(paste("Doing",j,i))
     
-    pre = as.matrix(raster(dpre.stk, i))
-    evp = as.matrix(raster(devp.stk, i))
-    ro = clamp(raster(dro.stk, i), lower=0, useValues=TRUE)
+    pre = as.matrix(raster(dpre.avg, i))
+    evp = as.matrix(raster(devp.avg, i))
+    ro = clamp(raster(dro.avg, i), lower=0, useValues=TRUE)
     ro = as.matrix(ro)
     sro = ro * (1-bpf)
     bro = ro * bpf
-    sim.out = swam_1t(gridx, gridy, dem, ldd, outelev, 
+    sim.out = swam_10(gridx, gridy, dem, ldd, outelev, 
                       mask, cella, celld,
                       pre, evp, sro, bro,
-                      delt, deltu, effvol,
+                      delt, 1, effvol,
                       wvl, wse, war)
     
     wvl = sim.out$wvl
@@ -137,6 +146,12 @@ war.r = setValues(dem.r, matrix(sim.out$war,
                                 nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
 plot(war.r, col=cols)
 plot(bclake, add=TRUE)
+
+fout.r = setValues(dem.r, matrix(sim.out$fout, 
+                                nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(fout.r, col=cols)
+plot(bclake, add=TRUE)
+
 stop()
 plot(log10(wse.r), col=cols)
 plot(bclake, add=TRUE)
