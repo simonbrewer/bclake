@@ -9,7 +9,8 @@
 !-------------------------------------------------------------------------------
 
 !-------------------------------------------------------------------------------
-      subroutine rhydra( nc, nr, nyrs, startyear, converg, laket, spin,
+      subroutine rhydra( nc, nr, nyrs, ndays, startyear,
+     *                   converg, laket, spin,
      *                   dem, area, outdir, sillh,
      *                   outnewi, outnewj, basin, 
      *                   prcpi, evapi, runin, drainin,
@@ -22,8 +23,8 @@
      *     outdir(nc,nr),sillh(nc,nr),
      *     outnewi(nc,nr),outnewj(nc,nr)
       ! Topographic variables
-      double precision drainin(nc,nr,nmons),runin(nc,nr,nmons),
-     *     prcpi(nc,nr,nmons),evapi(nc,nr,nmons) 
+      double precision drainin(nc,nr,ndays),runin(nc,nr,ndays),
+     *     prcpi(nc,nr,ndays),evapi(nc,nr,nmons) 
 
       ! Outputs
       double precision larea(nc,nr) ! lake area of cell (0/1)
@@ -127,6 +128,43 @@ c
  220   continue
  210  continue
 c
+c
+c--------------------------------------------------------------
+c convert input from mm/day to m/s
+c
+      do 334 k = 1,ndays
+       do 335 j = 1,nr
+        do 336 i = 1,nc
+c
+         if(runin(i,j,k) .ge. 1.e+20) then
+          runin(i,j,k) = 0.
+         endif
+         if(drainin(i,j,k) .ge. 1.e+20) then 
+          drainin(i,j,k) = 0.
+         endif
+         if(prcpi(i,j,k) .ge. 1.e+20) then 
+          prcpi(i,j,k) = 0.
+         endif
+         if(evapi(i,j,k) .ge. 1.e+20) then 
+          evapi(i,j,k) = 0.
+         endif
+c
+         runin(i,j,k)   = max((runin(i,j,k))/0.864e+8,0.)     !IBIS data
+         drainin(i,j,k) = max((drainin(i,j,k))/0.864e+8,0.)   !IBIS data
+         prcpi(i,j,k)   = max((prcpi(i,j,k))/0.864e+8,0.)     !IBIS data
+         evapi(i,j,k)   = max((evapi(i,j,k))/0.864e+8,0.)     !IBIS data
+c
+c Test to see response of open lake
+c
+c       evapi(i,j,k)   = 0.
+c       runin(i,j,k)   = runin(i,j,k)*100.
+c
+ 336    continue
+ 335   continue
+ 334  continue
+c
+
+!-------------------------------------------------------------------------------
       end
 !-------------------------------------------------------------------------------
 

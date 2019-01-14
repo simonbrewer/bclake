@@ -162,6 +162,36 @@ fpwa <- function(gridx, gridy, dem, ldd, mask) {
 ###############################################################################
 
 ###############################################################################
+## Calls rhydro fortran routine
+dyn.load("./src/rhydra.so")
+
+rhydra <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
+                   normal = 1, leap = 1, irrig = 1,
+                   outnewi, outnewj, basin, dem, rivdir, mflac,
+                   prcpi, evapi, runin, drainin,
+                   gridxf, gridyf) {
+  
+  simcf = .Fortran("rhydra",
+                   nyrs = as.integer(nyrs),
+                   startyear = as.integer(startyear), 
+                   converg = as.integer(converg), 
+                   laket = as.integer(laket), 
+                   spin = as.integer(spin),
+                   normal = as.integer(normal), 
+                   leap = as.integer(leap), 
+                   irrig = as.integer(irrig),
+                   outnewi = as.double(outnewi), outnewj = as.double(outnewj),
+                   basin = as.double(basin), dem = as.double(dem),
+                   outdir = as.double(rivdir), sillh = as.double(mflac),
+                   prcpi = as.double(prec), evapi = as.double(evap),
+                   runin = as.double(runoff), drainin = as.double(drain),
+                   outelv = double(gridxf*gridyf), lakem = double(gridxf*gridyf),
+                   lakevolm = double(12*(nyrs+spin)), lakevola = double(nyrs+spin))
+  return(simcf)
+}
+###############################################################################
+
+###############################################################################
 ## binOutlet
 ## Function to find outlet cells
 ## Defined as cells next to the border mask, with no lower elevation neighbors
