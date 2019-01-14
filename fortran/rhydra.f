@@ -5,10 +5,135 @@
 ! scale: Testing the accuracy of an atmospheric GCM, 
 ! Journal of Climate, 13, 686-704.
 !
-! Ver. 0.1 Started transferring code from hydra.f
+! Ver. 0.1 Simple template to read in a DEM
 !-------------------------------------------------------------------------------
 
-      subroutine rhydra( nyrs, startyear, converg, laket, spin,
+!-------------------------------------------------------------------------------
+      subroutine rhydra( nc, nr, nyrs, startyear, converg, laket, spin,
+     *                   dem, area, outdir, sillh,
+     *                   outnewi, outnewj, basin, 
+     *                   prcpi, evapi, runin, drainin,
+     *                   outelv, lakem, lakevolm, lakevola )
+
+      ! Input variables
+      integer nc,nr ! Grid dimensions
+      ! Forcings
+      double precision dem(nc,nr),basin(nc,nr),area(nc,nr),
+     *     outdir(nc,nr),sillh(nc,nr),
+     *     outnewi(nc,nr),outnewj(nc,nr)
+      ! Topographic variables
+      double precision drainin(nc,nr,nmons),runin(nc,nr,nmons),
+     *     prcpi(nc,nr,nmons),evapi(nc,nr,nmons) 
+
+      ! Outputs
+      double precision larea(nc,nr) ! lake area of cell (0/1)
+      double precision outelv(nc,nr) ! water surface elevation (m)
+      double precision sflux(nc,nr) ! surface flux (?)
+      double precision elevm(nc,nr),lakem(nc,nr),deptm(nc,nr) ! (?) 
+      double precision voll(nc,nr) ! lake reservoir (m3)
+      double precision volb(nc,nr) ! baseflow reservoir (m3)
+      double precision volr(nc,nr) ! runoff reservoir (m3)
+      double precision volt(nc,nr) ! total volume (m3) (?)
+      double precision dvoll(nc,nr) ! volume change (m3)
+      double precision tempdl(nc,nr),tempdr(nc,nr),temp(nc,nr)
+      double precision fluxout(nc,nr),sfluxin(nc,nr)
+      double precision areat(nc,nr),basin2(nc,nr)
+      double precision sfluxout(nc,nr,12)
+      
+      ! Model internals
+      double precision real circ,dy,dx,pi,rad,phi,delt,res,ic,io,ioo
+      double precision grideps,dveps,gridif
+      integer ioff(8),joff(8) 
+      integer ndaypm(12)
+
+c--------------------------------------------------------------
+      ! Parameters
+      parameter (grideps = 1.e-10,dveps = 1.e-10)
+c     parameter (grideps = 0.01,dveps = 1.e-06)
+      parameter (circ=4.0024E+7, pi = 3.1415926536)
+      parameter (rad = pi/180., dy = circ*((5./60.)/360.))
+      parameter (dgper = 1/360)  !number of degrees/input grid cell
+
+c--------------------------------------------------------------
+c set values for searching all gridcells around a given gridcell
+c 8 possible directions !! NEEDS UPDATING TO GRASS DIRECTIONS
+c
+      data ioff /0,1,1,1,0,-1,-1,-1/ ! traditional way
+      data joff /-1,-1,0,1,1,1,0,-1/
+
+c--------------------------------------------------------------
+c initialize variables and constants
+c nyr is the number of years to run the model, delt is the timestep.
+c
+      ioo  = 2.5e-03 
+c     delt = 1800. !shorter timestep for poleward locations
+      delt = 3600. !good for tropics and mid-latitudes
+      timed = 13.0e+05   !when seperating baseflow from surface runoff
+      timer = 7200.    
+c     timed = timer     !for IBIS runs, which already calculates residence time
+      effref = 0.8      !average of channel and floodplain flow
+      ndaypm = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+
+      iday = 0
+      imon = 1
+      iyear = 1
+      itime = 0
+      ktstep = 0
+      nspday = 24./(delt/3600.)
+      volchk = 0.
+      
+c--------------------------------------------------------------
+c initialize output variables
+c
+      do 205 j = 1,nr
+       do 206 i = 1,nc
+        outelv(i,j) = dem(i,j)
+        elevm(i,j) = 0.
+        sflux(i,j) = 0.
+        lakem(i,j) = 0.
+        deptm(i,j) = 0.
+c       vollm(i,j) = 0.
+c       dvollm(i,j) = 0.
+        voll(i,j) = 0.
+        volb(i,j) = 0.
+        volr(i,j) = 0.
+        volt(i,j) = 0.
+        dvoll(i,j) = 0.
+        tempdl(i,j) = 0.
+        tempdr(i,j) = 0.
+        temp(i,j)  = 0.
+        fluxout(i,j) = 0.
+        sfluxin(i,j) = 0.
+        areat(i,j) = 0.
+        basin2(i,j) = 0.
+        do 207 k = 1,12
+         sfluxout(i,j,k) = 0.
+207     continue
+206    continue
+205   continue
+c
+      do 210 j = 1,nr
+       do 220 i = 1,nc
+        if(laket .eq. 0)then
+         larea(i,j) = 0.
+        else
+         larea(i,j) = min(larea(i,j),1.)
+        endif
+        if(sillh(i,j) .eq. 0.)then
+         outnewi(i,j) = 0.
+         outnewj(i,j) = 0.
+        endif
+        if(outnewi(i,j) .eq. 0.)sillh(i,j) = 0.
+ 220   continue
+ 210  continue
+c
+      end
+!-------------------------------------------------------------------------------
+
+
+      
+!-------------------------------------------------------------------------------
+      subroutine oldrhydra( nyrs, startyear, converg, laket, spin,
      *                     normal, leap, irrig,
 c     *                     nc, nr, ncf, nrf,
      *                     outnewi, outnewj, basin, 
@@ -27,7 +152,7 @@ c     *                     nc, nr, ncf, nrf,
      *     laketot,normalx,dismean,evapm,evapt,lareat,chadarea,leap
       double precision grideps,dveps,gridif
 c     real grideps,dveps,gridif
-      integer itime,iyear,imon,iday,step,icmon,iwmon,converg,
+      integer itime, iyear,imon,iday,step,icmon,iwmon,converg,
      *        laket,cday,wday,tmpdir2,spin,
      *        tyear,normal,irrig
       logical loopf
