@@ -162,30 +162,30 @@ fpwa <- function(gridx, gridy, dem, ldd, mask) {
 ###############################################################################
 
 ###############################################################################
-## Calls rhydro fortran routine
+## Calls rhydra fortran routine
 dyn.load("./src/rhydra.so")
-
-rhydra <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
-                   normal = 1, leap = 1, irrig = 1,
-                   outnewi, outnewj, basin, dem, rivdir, mflac,
-                   prcpi, evapi, runin, drainin,
-                   gridxf, gridyf) {
+## Should be able to eliminate converg, laket
+rhydra <- function(gridx, gridy, nyrs, ndays, 
+                   startyear, converg = 1, laket = 0, spin = 1,
+                   dem, area, rivdir, mflac,
+                   outnewi, outnewj, basin, 
+                   prcpi, evapi, runin, drainin) 
+  {
   
   simcf = .Fortran("rhydra",
-                   nyrs = as.integer(nyrs),
+                   nc = as.integer(gridx), nr = as.integer(gridy),
+                   nyrs = as.integer(nyrs), ndays = as.integer(ndays),
                    startyear = as.integer(startyear), 
                    converg = as.integer(converg), 
                    laket = as.integer(laket), 
                    spin = as.integer(spin),
-                   normal = as.integer(normal), 
-                   leap = as.integer(leap), 
-                   irrig = as.integer(irrig),
-                   outnewi = as.double(outnewi), outnewj = as.double(outnewj),
-                   basin = as.double(basin), dem = as.double(dem),
+                   dem = as.double(dem), area = as.double(area), 
                    outdir = as.double(rivdir), sillh = as.double(mflac),
+                   outnewi = as.double(outnewi), outnewj = as.double(outnewj),
+                   basin = as.double(basin), 
                    prcpi = as.double(prec), evapi = as.double(evap),
                    runin = as.double(runoff), drainin = as.double(drain),
-                   outelv = double(gridxf*gridyf), lakem = double(gridxf*gridyf),
+                   outelv = double(gridx*gridy), lakem = double(gridx*gridy),
                    lakevolm = double(12*(nyrs+spin)), lakevola = double(nyrs+spin))
   return(simcf)
 }
@@ -324,4 +324,35 @@ rotate180.matrix <- function(x) {
 rotate270.matrix <- function(x) {
   mirror.matrix(t(x))
 }
+
+###############################################################################
+## Older version based on original fortran code
+## Calls rhydra fortran routine
+# dyn.load("./src/rhydra.so")
+# 
+# rhydra <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
+#                    normal = 1, leap = 1, irrig = 1,
+#                    outnewi, outnewj, basin, dem, rivdir, mflac,
+#                    prcpi, evapi, runin, drainin,
+#                    gridxf, gridyf) {
+#   
+#   simcf = .Fortran("rhydra",
+#                    nyrs = as.integer(nyrs),
+#                    startyear = as.integer(startyear), 
+#                    converg = as.integer(converg), 
+#                    laket = as.integer(laket), 
+#                    spin = as.integer(spin),
+#                    normal = as.integer(normal), 
+#                    leap = as.integer(leap), 
+#                    irrig = as.integer(irrig),
+#                    outnewi = as.double(outnewi), outnewj = as.double(outnewj),
+#                    basin = as.double(basin), dem = as.double(dem),
+#                    outdir = as.double(rivdir), sillh = as.double(mflac),
+#                    prcpi = as.double(prec), evapi = as.double(evap),
+#                    runin = as.double(runoff), drainin = as.double(drain),
+#                    outelv = double(gridxf*gridyf), lakem = double(gridxf*gridyf),
+#                    lakevolm = double(12*(nyrs+spin)), lakevola = double(nyrs+spin))
+#   return(simcf)
+# }
+###############################################################################
 
