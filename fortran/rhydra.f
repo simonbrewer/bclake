@@ -11,7 +11,7 @@
 !-------------------------------------------------------------------------------
       subroutine rhydra( nc, nr, nyrs, ndays, startyear,
      *                   converg, laket, spin,
-     *                   dem, area, outdir, sillh,
+     *                   dem, mask, area, outdir, sillh,
      *                   outnewi, outnewj, basin, 
      *                   prcpi, evapi, runin, drainin,
      *                   outelv, lakem, lakevolm, lakevola )
@@ -19,9 +19,10 @@
       ! Input variables
       integer nc,nr ! Grid dimensions
       ! Forcings
-      double precision dem(nc,nr),basin(nc,nr),area(nc,nr),
+      integer mask(nc,nr) ! Binary mask
+      double precision dem(nc,nr),area(nc,nr),
      *     outdir(nc,nr),sillh(nc,nr),
-     *     outnewi(nc,nr),outnewj(nc,nr)
+     *     outnewi(nc,nr),outnewj(nc,nr),basin(nc,nr)
       ! Topographic variables
       double precision drainin(nc,nr,ndays),runin(nc,nr,ndays),
      *     prcpi(nc,nr,ndays),evapi(nc,nr,nmons) 
@@ -139,6 +140,7 @@ c
        do 335 j = 1,nr
         do 336 i = 1,nc
 c
+         if (mask(i,j).eq.1) then
          if(runin(i,j,k) .ge. 1.e+20) then
           runin(i,j,k) = 0.
          endif
@@ -162,8 +164,9 @@ c
 c
 c Test to see response of open lake
 c
-c       evapi(i,j,k)   = 0.
-c       runin(i,j,k)   = runin(i,j,k)*100.
+c        evapi(i,j,k)   = 0.
+c        runin(i,j,k)   = runin(i,j,k)*100.
+         end if ! Mask check
 c
  336    continue
  335   continue
@@ -178,6 +181,7 @@ c
       do 914 j = 1,nr
        do 915 i = 1,nc
 c
+        if (mask(i,j).eq.1) then
         if(sillh(i,j) .gt. 0.)then
          ii = outnewi(i,j)
          jj = outnewj(i,j)
@@ -188,6 +192,7 @@ c
           endif
          endif
         endif
+        end if ! Mask check
 c
 915    continue
 914   continue
@@ -218,6 +223,7 @@ c
 c
       do 918 j = 1,nr
        do 919 i = 1,nc
+         if (mask(i,j).eq.1) then
          ii = outnewi(i,j)
          jj = outnewj(i,j)
          !iii = min(max(outnewi(i,j)-(istart-1),0.),REAL(incf))
@@ -228,6 +234,7 @@ c
            larea(i,j)  = 1.
            outelv(i,j) = max(dem(i,j),sillh(i,j))  !10/7/98
            !areat(iii,jjj) = areat(iii,jjj) + area(j)   !10/7/98
+         endif
          endif
 919    continue
 918   continue
@@ -288,7 +295,7 @@ c start first spatial loop.
 c
        do 120 j = 1,nr
         do 110 i = 1,nc
-        if(basin(i,j) .gt. 0.)then
+        if(mask(i,j) .eq. 1)then
         !write(*,*) i,j,kt,iday
         end if
 c

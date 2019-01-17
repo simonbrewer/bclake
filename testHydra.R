@@ -114,8 +114,8 @@ nyrs = 1
 ndays = 365
 
 sim.out = rhydra(gridx, gridy, nyrs, ndays, 
-                 startyear=1, converg=1, laket=0, spin=1,
-                 dem=dem, area=cella, rivdir=ldd, mflac=mflac,
+                 startyear=1, converg=0, laket=0, spin=1,
+                 dem=dem, mask=mask, area=cella, rivdir=ldd, mflac=mflac,
                  outnewi=iout, outnewj=jout, basin=bas, 
                  prcpi=pre, evapi=evp, runin=sro, drainin=bro) 
 

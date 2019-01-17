@@ -167,7 +167,7 @@ fpwa <- function(gridx, gridy, dem, ldd, mask) {
 ## Should be able to eliminate converg, laket
 rhydra <- function(gridx, gridy, nyrs, ndays, 
                    startyear, converg = 1, laket = 0, spin = 1,
-                   dem, area, rivdir, mflac,
+                   dem, mask, area, rivdir, mflac,
                    outnewi, outnewj, basin, 
                    prcpi, evapi, runin, drainin) 
   {
@@ -179,7 +179,9 @@ rhydra <- function(gridx, gridy, nyrs, ndays,
                    converg = as.integer(converg), 
                    laket = as.integer(laket), 
                    spin = as.integer(spin),
-                   dem = as.double(dem), area = as.double(area), 
+                   dem = as.double(dem), 
+                   mask = as.integer(mask), 
+                   area = as.double(area), 
                    outdir = as.double(rivdir), sillh = as.double(mflac),
                    outnewi = as.double(outnewi), outnewj = as.double(outnewj),
                    basin = as.double(basin), 
