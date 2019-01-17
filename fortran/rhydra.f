@@ -28,6 +28,7 @@
 
       ! Outputs
       double precision larea(nc,nr) ! lake area of cell (0/1)
+      double precision laream(nc,nr) ! monthly average area
       double precision outelv(nc,nr) ! water surface elevation (m)
       double precision sflux(nc,nr) ! surface flux (?)
       double precision elevm(nc,nr),lakem(nc,nr),deptm(nc,nr) ! (?) 
@@ -45,6 +46,7 @@
       double precision real circ,dy,dx,pi,rad,phi,delt,res,ic,io,ioo
       double precision grideps,dveps,gridif
       integer i,j,k,ii,jj,kk
+      integer spin
       integer ioff(8),joff(8) 
       integer ndaypm(12)
 
@@ -83,7 +85,7 @@ c     timed = timer     !for IBIS runs, which already calculates residence time
       ktstep = 0
       nspday = 24./(delt/3600.)
       volchk = 0.
-      
+      !write(*,*) "nspday",nspday
 c--------------------------------------------------------------
 c initialize output variables
 c
@@ -233,6 +235,79 @@ c
       endif
 c
 c
+c--------------------------------------------------------------
+c
+c Main loop in two parts 120 and 121 loops. 
+c First loop (120) calculates the change in volume with time.
+c Second loop (121) spreads volume in lake area
+c
+c     goto 441
+c
+      write(*,*)'to main loop'
+c
+c loop 130 is the total number of years that the model will be run.
+c 
+c This version is set for equilibrium runs so the number of years will
+c be simply spinup plus 1 with repeated climate
+c 
+c Recommended spin up is between 30 and several 100 years although
+c (To avoid long spin up, use the convergence function)
+c
+      do 130 iyear = 1,spin+1
+c
+c monthly loop
+c
+       do 131 imon = 1,12
+c
+c re-initialize some variables each month.
+c
+       do j = 1,nr
+        do i = 1,nc
+         sfluxout(i,j,imon) = 0.
+         laream(i,j) = 0.
+        enddo
+       enddo
+c
+c write a few diagnostics
+c
+       write(*,*)'begin mon ',imon
+c
+c start the daily loop
+c
+       do 132 iday = 1,ndaypm(imon)
+c
+c calculate the number of days from start of run
+c
+c start the sub-daily timestep (one hour in this case but depends
+c on how delt is set).
+c
+       do 133 kt = 1,int(nspday)
+        ktstep = ktstep + 1
+c
+c start first spatial loop.
+c
+       do 120 j = 1,nr
+        do 110 i = 1,nc
+        if(basin(i,j) .gt. 0.)then
+        !write(*,*) i,j,kt,iday
+        end if
+c
+ 110    continue
+ 120   continue
+c
+c
+c end of flux calculations
+c
+ 133   continue   !end hourly loop
+ 132   continue   !end daily loop
+c
+ 131   continue   ! end imonth loop
+c
+       write(*,*)'year = ',iyear
+c
+ 130  continue    ! end iyear loop
+c
+c----------------------------------------------------
 
 !-------------------------------------------------------------------------------
       end
