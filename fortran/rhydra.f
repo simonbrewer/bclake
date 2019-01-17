@@ -44,6 +44,7 @@
       ! Model internals
       double precision real circ,dy,dx,pi,rad,phi,delt,res,ic,io,ioo
       double precision grideps,dveps,gridif
+      integer i,j,k,ii,jj,kk
       integer ioff(8),joff(8) 
       integer ndaypm(12)
 
@@ -148,11 +149,14 @@ c
          if(evapi(i,j,k) .ge. 1.e+20) then 
           evapi(i,j,k) = 0.
          endif
+         !if(i.eq.10.and.j.eq.12) then
+         !        write(*,*) i,j,prcpi(i,j,k)
+         !end if
 c
-         runin(i,j,k)   = max((runin(i,j,k))/0.864e+8,0.)     !IBIS data
-         drainin(i,j,k) = max((drainin(i,j,k))/0.864e+8,0.)   !IBIS data
-         prcpi(i,j,k)   = max((prcpi(i,j,k))/0.864e+8,0.)     !IBIS data
-         evapi(i,j,k)   = max((evapi(i,j,k))/0.864e+8,0.)     !IBIS data
+         runin(i,j,k)   = max((runin(i,j,k))/0.864e+8,0.) !mm/d>m3/s
+         drainin(i,j,k) = max((drainin(i,j,k))/0.864e+8,0.) !mm/d>m3/s
+         prcpi(i,j,k)   = max((prcpi(i,j,k))/0.864e+8,0.) !mm/d>m3/s
+         evapi(i,j,k)   = max((evapi(i,j,k))/0.864e+8,0.) !mm/d>m3/s
 c
 c Test to see response of open lake
 c
@@ -162,6 +166,72 @@ c
  336    continue
  335   continue
  334  continue
+cc
+c--------------------------------------------------------------
+c Calculate the total volume within each potential lake area (volt).
+c First set the volume of the outlet location to initial value.
+c volt is used to determine when the lake is full and outflow
+c will occur to the river downstream of the sill.
+c
+      do 914 j = 1,nr
+       do 915 i = 1,nc
+c
+        if(sillh(i,j) .gt. 0.)then
+         ii = outnewi(i,j)
+         jj = outnewj(i,j)
+         if ((ii .gt. 0).and. (ii .le. nc))then
+          if((jj .gt. 0).and. (jj .le. nr))then
+           volt(ii,jj) = volt(ii,jj) + 
+     *        max(sillh(i,j)-dem(i,j),0.1)*area(i,j)
+          endif
+         endif
+        endif
+c
+915    continue
+914   continue
+c
+c--------------------------------------------------------------
+c CONVERGENCE - set converg to 0. in .inf file
+c
+c  This convergence function is designed to approximately fill all
+c potential lake basins in the region of simulation. It is useful
+c in humid regions where all lake basins are full and you do not
+c wish to wait for the model to fill them. It can take many hundreds
+c of years to fill large lakes (such as Lake Michiga/Huron). Therefore,
+c this saves time. It is only approximate, therefore, don't depend on the
+c answer to be exactly right until the model has run for some time.
+c 
+c  if converg = 0. then set the outlet volume to the lake
+c  maximum volume. This allows the model to start out with
+c  all lakes full and discharge to the ocean without first 
+c  having to fill large lake basins (Great Lakes).
+c  This is only used if are interested in river discharge only.
+c  If want to predict lakes must have Converg = 1
+c
+      if(converg .eq. 0)then
+      write(*,*)
+      write(*,*)'###################'
+      write(*,*)'converge on'
+      write(*,*)'###################'
+c
+      do 918 j = 1,nr
+       do 919 i = 1,nc
+         ii = outnewi(i,j)
+         jj = outnewj(i,j)
+         !iii = min(max(outnewi(i,j)-(istart-1),0.),REAL(incf))
+         !jjj = min(max(outnewj(i,j)-(jstart-1),0.),REAL(inrf))
+         if(outnewi(i,j) .gt. 0.)then
+           voll(ii,jj)   = max(max(dem(i,j)-sillh(i,j),0.1)*area(i,j),
+     *     volt(ii,jj))
+           larea(i,j)  = 1.
+           outelv(i,j) = max(dem(i,j),sillh(i,j))  !10/7/98
+           !areat(iii,jjj) = areat(iii,jjj) + area(j)   !10/7/98
+         endif
+919    continue
+918   continue
+c
+      endif
+c
 c
 
 !-------------------------------------------------------------------------------

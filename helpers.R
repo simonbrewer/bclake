@@ -5,6 +5,7 @@ dyn.load("./fortran/swamCA.so")
 dyn.load("./fortran/getpwa.so")
 dyn.load("./fortran/swam.so")
 dyn.load("./fortran/swam10.so")
+dyn.load("./fortran/rhydra.so")
 ###############################################################################
 
 ###############################################################################
@@ -163,7 +164,6 @@ fpwa <- function(gridx, gridy, dem, ldd, mask) {
 
 ###############################################################################
 ## Calls rhydra fortran routine
-dyn.load("./src/rhydra.so")
 ## Should be able to eliminate converg, laket
 rhydra <- function(gridx, gridy, nyrs, ndays, 
                    startyear, converg = 1, laket = 0, spin = 1,
@@ -183,8 +183,8 @@ rhydra <- function(gridx, gridy, nyrs, ndays,
                    outdir = as.double(rivdir), sillh = as.double(mflac),
                    outnewi = as.double(outnewi), outnewj = as.double(outnewj),
                    basin = as.double(basin), 
-                   prcpi = as.double(prec), evapi = as.double(evap),
-                   runin = as.double(runoff), drainin = as.double(drain),
+                   prcpi = as.double(prcpi), evapi = as.double(evapi),
+                   runin = as.double(runin), drainin = as.double(drainin),
                    outelv = double(gridx*gridy), lakem = double(gridx*gridy),
                    lakevolm = double(12*(nyrs+spin)), lakevola = double(nyrs+spin))
   return(simcf)
