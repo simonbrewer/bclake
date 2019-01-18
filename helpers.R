@@ -188,7 +188,9 @@ rhydra <- function(gridx, gridy, nyrs, ndays,
                    prcpi = as.double(prcpi), evapi = as.double(evapi),
                    runin = as.double(runin), drainin = as.double(drainin),
                    outelv = double(gridx*gridy), lakem = double(gridx*gridy),
-                   lakevolm = double(12*(nyrs+spin)), lakevola = double(nyrs+spin))
+                   lakevolm = double(12*(nyrs+spin)), lakevola = double(nyrs+spin), 
+                   voll = double(gridx*gridy), volb = double(gridx*gridy), volr = double(gridx*gridy), 
+                   tempdl = double(gridx*gridy), larea = double(gridx*gridy))
   return(simcf)
 }
 ###############################################################################

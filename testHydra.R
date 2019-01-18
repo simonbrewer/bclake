@@ -99,7 +99,7 @@ wse = as.matrix(wse.r)
 war = as.matrix(war.r)
 
 pre = as.array(dpre.stk)
-evp = as.array(dpre.stk)
+evp = as.array(devp.stk)
 ro = as.array(clamp(dpre.stk, lower=0, useValues=TRUE))
 sro = ro * (1-bpf)
 bro = ro * bpf
@@ -120,74 +120,13 @@ sim.out = rhydra(gridx, gridy, nyrs, ndays,
                  prcpi=pre, evapi=evp, runin=sro, drainin=bro) 
 
 stop()
+tmp.r = setValues(dem.r, matrix(sim.out$volr, 
+                                nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
+plot(tmp.r)
+plot(bclake, add=TRUE)
+
 tmp.r = setValues(dem.r, matrix(sim.out$outelv, 
                                 nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
 plot(tmp.r - dem.r)
 plot(bclake, add=TRUE)
-
-
-###############################################################################
-nyrs = 5
-bclevel = matrix(NA, nrow=365, ncol=nyrs)
-## Convert forcing to matrices
-for (j in 1:nyrs) {
-  
-  for (i in 1:365) {
-    print(paste("Doing",j,i))
-    
-    pre = as.matrix(raster(dpre.stk, i))
-    evp = as.matrix(raster(devp.stk, i))
-    ro = clamp(raster(dro.stk, i), lower=0, useValues=TRUE)
-    ro = as.matrix(ro)
-    sro = ro * (1-bpf)
-    bro = ro * bpf
-    sim.out = swam_1t(gridx, gridy, dem, ldd, outelev, 
-                      mask, cella, celld,
-                      pre, evp, sro, bro,
-                      delt, deltu, effvol,
-                      wvl, wse, war)
-    
-    wvl = sim.out$wvl
-    wse = sim.out$wse
-    # print(sum(sim.out$wse-sim.out$dem))
-    print(max(sim.out$fout))
-    wse.r = setValues(dem.r, matrix(sim.out$wse, 
-                                    nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
-    # print(paste(i,"Max depth:", cellStats(wse.r, max)))
-    # plot(wse.r, col=cols)
-    
-    bclevel[i,j] = extract(wse.r, bccent)
-    print(paste(j,"Lake level:", bclevel[i,j]))
-    
-  }
-  
-}
-plot(wse.r, col=cols)
-plot(bclake, add=TRUE)
-
-war.r = setValues(dem.r, matrix(sim.out$war, 
-                                nrow=dim(dem.r)[1], ncol=dim(dem.r)[2]))
-plot(war.r, col=cols)
-plot(bclake, add=TRUE)
-stop()
-plot(log10(wse.r), col=cols)
-plot(bclake, add=TRUE)
-
-plot(c(bclevel), type='l')
-
-pit.r = focal(dem.r, w=matrix(1,3,3), findPit)
-pit.sp = data.frame(coordinates(pit.r), pit = getValues(pit.r))
-pit.sp = subset(pit.sp, pit==1)
-coordinates(pit.sp) <- ~x+y 
-plot(wse.r)
-plot(log10(wse.r), col=cols)
-plot(bclake, add=TRUE)
-plot(pit.sp, add=TRUE)
-
-## Output
-
-bclevel.ts = ts(c(bclevel), start = 1, freq=365)
-pdf("bclevel_test.pdf")
-plot(bclevel.ts, xlab = "Time (yrs)", ylab="Lake level (m)")
-dev.off()
 

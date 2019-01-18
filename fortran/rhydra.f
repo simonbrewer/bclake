@@ -14,7 +14,8 @@
      *                   dem, mask, area, outdir, sillh,
      *                   outnewi, outnewj, basin, 
      *                   prcpi, evapi, runin, drainin,
-     *                   outelv, lakem, lakevolm, lakevola )
+     *                   outelv, lakem, lakevolm, lakevola,
+     *                   voll, volb, volr, tempdl, larea )
 
       ! Input variables
       integer nc,nr ! Grid dimensions
@@ -230,7 +231,7 @@ c
          !iii = min(max(outnewi(i,j)-(istart-1),0.),REAL(incf))
          !jjj = min(max(outnewj(i,j)-(jstart-1),0.),REAL(inrf))
          if(outnewi(i,j) .gt. 0.)then
-           voll(ii,jj)   = max(max(dem(i,j)-sillh(i,j),0.1)*area(i,j),
+           voll(ii,jj)  = max(max(dem(i,j)-sillh(i,j),0.1)*area(i,j),
      *     volt(ii,jj))
            larea(i,j)  = 1.
            outelv(i,j) = max(dem(i,j),sillh(i,j))  !10/7/98
@@ -310,9 +311,9 @@ c
           prcpl   = max(prcpi(i,j,k)*area(i,j),0.)  !precipitation rate
           evapl   = max(evapi(i,j,k)*area(i,j),0.)  !evaporation rate
 c
-         if(i.eq.25.and.j.eq.25.and.kt.eq.1) then
-                 write(*,*) i,j,k,iday,runin(i,j,k),rin
-         end if
+c         if(i.eq.25.and.j.eq.25.and.kt.eq.1) then
+c                 write(*,*) i,j,k,iday,runin(i,j,k),rin
+c         end if
 c --------------------------------------------------------------------
 c IRRIGATION - irrigation withdrawals to go here
 c --------------------------------------------------------------------
@@ -325,6 +326,9 @@ c calculate volume in runoff reservoir for land or lake
 c
          rout = volr(i,j)/timer
          volr(i,j) = max(volr(i,j) + (rin-rout)*delt,0.)
+c         if(i.eq.25.and.j.eq.25.and.kt.eq.1) then
+c                 write(*,*) i,j,k,kt,rin,rout,volr(i,j)
+c         end if
 c
 c calculate volume in baseflow reservoir, land only
 c
@@ -339,13 +343,13 @@ c
          jj = outnewj(i,j)
 c lake water balance for this timestep
 c
-          temp(i,j) = (rout+bout)*(1.-larea(i,j))
+         temp(i,j) = (rout+bout)*(1.-larea(i,j))
 c
 c land water balance for this timestep.
 c
-          tempdr(i,j) = ((rout+
-     *            bout)*(1.-larea(i,j))-irrout
-     *           + (sfluxin(i,j) - fluxout(i,j)))*delt
+         tempdr(i,j) = ((rout+
+     *           bout)*(1.-larea(i,j))-irrout
+     *          + (sfluxin(i,j) - fluxout(i,j)))*delt
 c
 c subtract any evaporation from the lake from the outlet
 c location. The outlet is the accountant for the entire lake.
@@ -354,6 +358,9 @@ c
           tempdl(ii,jj) = tempdl(ii,jj) 
      *          + ((prcpl-evapl)*larea(i,j))*delt
          endif
+c         if(i.eq.25.and.j.eq.25.and.kt.eq.1) then
+c                 write(*,*) i,j,k,kt,tempdl(ii,jj),larea(i,j)
+c         end if
 c
 c This should be accounted for in mask check
 !         else                 !basin .ne. requested number
@@ -365,6 +372,26 @@ c
 c
  110    continue
  120   continue
+
+c----------------------------------------------------------------
+c Calculate the change in volume (dvoll) as the sum of the P-E (tempdl)
+c and the river flow (tempdr). Set the minimum value of dvoll.
+c Add dvoll to existing reservoir volume (voll). Set variables
+c to 0. for next timestep.
+c
+       do j = 1,nr
+        do i = 1,nc
+         dvoll(i,j)  = tempdr(i,j) + tempdl(i,j)
+         if(abs(dvoll(i,j))/delt/area(i,j) .lt. dveps) then
+          dvoll(i,j) = 0.
+         endif
+         voll(i,j)  = max(voll(i,j) + dvoll(i,j),0.)
+         tempdl(i,j) = 0.
+         tempdr(i,j) = 0.
+        enddo
+       enddo
+c
+
 c
 c
 c end of flux calculations
