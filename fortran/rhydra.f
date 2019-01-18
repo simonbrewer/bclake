@@ -347,6 +347,19 @@ c
      *            bout)*(1.-larea(i,j))-irrout
      *           + (sfluxin(i,j) - fluxout(i,j)))*delt
 c
+c subtract any evaporation from the lake from the outlet
+c location. The outlet is the accountant for the entire lake.
+c
+         if(larea(i,j) .gt. 0.)then
+          tempdl(ii,jj) = tempdl(ii,jj) 
+     *          + ((prcpl-evapl)*larea(i,j))*delt
+         endif
+c
+c This should be accounted for in mask check
+!         else                 !basin .ne. requested number
+!          voll(ii,jj) = 0.
+!         endif
+c
 c
         end if ! Mask check
 c
