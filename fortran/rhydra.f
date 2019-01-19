@@ -379,8 +379,9 @@ c and the river flow (tempdr). Set the minimum value of dvoll.
 c Add dvoll to existing reservoir volume (voll). Set variables
 c to 0. for next timestep.
 c
-       do j = 1,nr
-        do i = 1,nc
+       do 123 j = 1,nr
+        do 113 i = 1,nc
+        if(mask(i,j) .eq. 1)then
          dvoll(i,j)  = tempdr(i,j) + tempdl(i,j)
          if(abs(dvoll(i,j))/delt/area(i,j) .lt. dveps) then
           dvoll(i,j) = 0.
@@ -388,11 +389,83 @@ c
          voll(i,j)  = max(voll(i,j) + dvoll(i,j),0.)
          tempdl(i,j) = 0.
          tempdr(i,j) = 0.
-        enddo
-       enddo
+        end if ! Mask check
+113     continue
+123    continue
 c
-
+c----------------------------------------------------------------
+c Distribute the dvoll of this timestep roughly into the existing lake area
+c It will be evened out in loop 121
 c
+       do 122 j = 1,nr
+        do 112 i = 1,nc
+        if(mask(i,j) .eq. 1)then
+c
+         !ii = i - (istart-1)
+         !jj = j - (jstart-1)
+         i2 = outnewi(i,j)
+         j2 = outnewj(i,j)
+c
+         if(((i2 .gt. 0).and. (j2 .gt. 0)) 
+     *          .and. (laket .eq. 0))then
+c
+c if volume in basin > lake volume larea = 1. everywhere
+c outelv = sill height
+c
+            if(voll(i2,j2) .ge. volt(i2,j2))then
+              outelv(i,j) = max(outelv(i,j) + larea(i,j)*
+     *            dvoll(i2,j2)/areat(i2,j2),dem(i,j))  !0.0 if larea = 0.
+c            outelv(ii,jj) = sillh(ii,jj)  !simpler way of handling it
+             larea(i,j) = max(min(outelv(i,j)-dem(i,j),1.),0.)
+c
+c if there is no volume then larea = 0.
+c
+            elseif(voll(i2,j2) .eq. 0.)then 
+             larea(i,j)  = 0.
+             outelv(i,j) = dem(i,j)
+             areat(i2,j2) = 0.   !probably not necessary
+c
+            elseif((voll(i2,j2).gt.0.).and.
+     *             (voll(i2,j2).lt.volt(i2,j2)))then
+c
+c if some lake already exists in closed basin distribute dvoll
+c evenly to those existing cells 
+c
+             if(areat(i2,j2) .gt. 0.)then
+c
+c set outelv if larea > 0. Add depth of water if positive
+c or negative. 
+c
+              outelv(i,j) = max(outelv(i,j) + larea(i,j)*
+     *            dvoll(i2,j2)/areat(i2,j2),dem(i,j))  !0.0 if larea = 0.
+c
+c If no existing lake; set larea of outlet location = 1.
+c Ideally would like to choose a kernal location in a 
+c realistic location within a lake. This would be stored
+c in array basin2.
+c
+             else   !if(areat(i2,j2) .eq. 0.))then 
+             if(basin2(i,j) .eq. 1.)then
+              outelv(i,j) = max(outelv(i,j) +
+     *            dvoll(i,j)/area(i2,j2),dem(i,j))
+              larea(i,j) = max(min(outelv(i,j)-dem(i,j),1.),0.)
+              areat(i2,j2) = max(area(i,j)*larea(i,j),0.)
+c
+             endif
+             endif
+c
+           endif
+          endif
+c
+         else                 ! masked cell
+          voll(i,j) = 0.
+         endif
+c
+         fluxout(i,j) = 0.
+         sfluxin(i,j) = 0.
+c
+ 112    continue
+ 122   continue
 c
 c end of flux calculations
 c
