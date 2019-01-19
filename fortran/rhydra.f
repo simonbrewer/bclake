@@ -243,6 +243,33 @@ c
 c
       endif
 c
+c--------------------------------------------------------------
+c FILL LOCATION
+c This is used if you would like to specify the location that
+c a lake will start filling from. This is useful for closed 
+c basin lakes that have multiple sub-basins. If nothing is
+c is changed here than the lake will begin to fill at the low
+c point nearest to the sill location.
+c
+c Find the lake kernal location, the location that a lake will
+c start to fill from. For now the kernal will be the first pit
+c encountered. Later it can be modified to provide a more 
+c physically realistic kernal location.
+c
+c set basin2 as a mask for lake kernal location. Currently am
+c setting as the outlet location. Corrections to that will
+c be made outside this loop
+c
+      do 916 j = i,nr
+       do 917 i = 1,nc
+        if(outnewi(i,j) .gt. 0.)then
+         if((i .eq. outnewi(i,j)) .and. (j .eq. outnewj(i,j)))then
+          basin2(i,j) = 1.
+         endif
+        endif
+917    continue
+916   continue
+c
 c
 c--------------------------------------------------------------
 c
@@ -386,6 +413,9 @@ c
          if(abs(dvoll(i,j))/delt/area(i,j) .lt. dveps) then
           dvoll(i,j) = 0.
          endif
+         if(abs(dvoll(i,j)) .gt. 0.0) then
+          write(*,*) "dvoll",i,j,dvoll(i,j)
+         endif
          voll(i,j)  = max(voll(i,j) + dvoll(i,j),0.)
          tempdl(i,j) = 0.
          tempdr(i,j) = 0.
@@ -445,7 +475,7 @@ c realistic location within a lake. This would be stored
 c in array basin2.
 c
              else   !if(areat(i2,j2) .eq. 0.))then 
-             if(basin2(i,j) .eq. 1.)then
+             if(basin2(i,j) .eq. 1.)then !?? basin2
               outelv(i,j) = max(outelv(i,j) +
      *            dvoll(i,j)/area(i2,j2),dem(i,j))
               larea(i,j) = max(min(outelv(i,j)-dem(i,j),1.),0.)
