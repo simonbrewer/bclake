@@ -48,7 +48,7 @@
       double precision real circ,dy,dx,pi,rad,phi,delt,res,ic,io,ioo
       double precision grideps,dveps,gridif
       double precision timer,timed,timeg
-      integer i,j,k,ii,jj,kk
+      integer i,j,k,ii,jj,kk,k2,tmpdir,tmpdir2
       integer spin
       integer ioff(8),joff(8) 
       integer ndaypm(12)
@@ -413,9 +413,6 @@ c
          if(abs(dvoll(i,j))/delt/area(i,j) .lt. dveps) then
           dvoll(i,j) = 0.
          endif
-         if(abs(dvoll(i,j)) .gt. 0.0) then
-          write(*,*) "dvoll",i,j,dvoll(i,j)
-         endif
          voll(i,j)  = max(voll(i,j) + dvoll(i,j),0.)
          tempdl(i,j) = 0.
          tempdr(i,j) = 0.
@@ -436,32 +433,37 @@ c
          i2 = outnewi(i,j)
          j2 = outnewj(i,j)
 c
-         if(((i2 .gt. 0).and. (j2 .gt. 0)) 
+         if(((i2 .gt. 0).and. (j2 .gt. 0)) !IF1 
      *          .and. (laket .eq. 0))then
+c                             write(*,*) "IF1"
 c
 c if volume in basin > lake volume larea = 1. everywhere
 c outelv = sill height
 c
-            if(voll(i2,j2) .ge. volt(i2,j2))then
+         if(voll(i2,j2) .ge. volt(i2,j2))then !IF2
+                             !write(*,*) "IF2a"
               outelv(i,j) = max(outelv(i,j) + larea(i,j)*
      *            dvoll(i2,j2)/areat(i2,j2),dem(i,j))  !0.0 if larea = 0.
-c            outelv(ii,jj) = sillh(ii,jj)  !simpler way of handling it
+c            outelv(i,j) = sillh(i,j)  !simpler way of handling it
              larea(i,j) = max(min(outelv(i,j)-dem(i,j),1.),0.)
 c
 c if there is no volume then larea = 0.
 c
             elseif(voll(i2,j2) .eq. 0.)then 
+                             !write(*,*) "IF2a"
              larea(i,j)  = 0.
              outelv(i,j) = dem(i,j)
              areat(i2,j2) = 0.   !probably not necessary
 c
             elseif((voll(i2,j2).gt.0.).and.
      *             (voll(i2,j2).lt.volt(i2,j2)))then
+                             !write(*,*) "IF2a"
 c
 c if some lake already exists in closed basin distribute dvoll
 c evenly to those existing cells 
 c
-             if(areat(i2,j2) .gt. 0.)then
+             if(areat(i2,j2) .gt. 0.)then !IF3
+                             !write(*,*) "IF3"
 c
 c set outelv if larea > 0. Add depth of water if positive
 c or negative. 
@@ -475,17 +477,18 @@ c realistic location within a lake. This would be stored
 c in array basin2.
 c
              else   !if(areat(i2,j2) .eq. 0.))then 
-             if(basin2(i,j) .eq. 1.)then !?? basin2
+                     if(basin2(i,j) .eq. 1.)then !?? basin2 !IF4
+                             !write(*,*) "IF4"
               outelv(i,j) = max(outelv(i,j) +
      *            dvoll(i,j)/area(i2,j2),dem(i,j))
               larea(i,j) = max(min(outelv(i,j)-dem(i,j),1.),0.)
               areat(i2,j2) = max(area(i,j)*larea(i,j),0.)
 c
-             endif
-             endif
+                     endif !IF4
+             endif !IF3
 c
-           endif
-          endif
+         endif !IF2
+       endif !IF1
 c
          else                 ! masked cell
           voll(i,j) = 0.
@@ -496,6 +499,199 @@ c
 c
  112    continue
  122   continue
+c
+c--------------------------------------------------------------
+c In this loop calculate the flux out of the cell, to which direction,
+c and the sum of the fluxes into cells. Also calculate the
+c water depth and lake area (larea) for each cell. 
+c
+       do 121 j = 1,nr
+        do 111 i = 1,nc
+c
+        if(mask(i,j) .eq. 1) then
+c
+         !ii = i - (istart-1)
+         !jj = j - (jstart-1)
+         !iii = min(max(outnewi(i,j)-(istart-1),1.),REAL(incf))
+         !jjj = min(max(outnewj(i,j)-(jstart-1),1.),REAL(inrf))
+         ii = outnewi(i,j) ! outlet...
+         jj = outnewj(i,j)
+c
+c use river directions computed in basfil.f
+c
+         tmpdir = outdir(i,j) 
+c
+         j2 = j + joff(tmpdir)
+         i2 = i + ioff(tmpdir)
+         dx = (area(i,j)/dy+area(i2,j2)/dy)/2.
+         dist = sqrt((dx*dx*abs(i2-i)*abs(i2-i))
+     *        + (dy*dy*abs(j2-j)*abs(j2-j)))
+         dist = max(dx,dist)
+c
+c set effective velocity of each cell. It is dependent on the
+c lake volume of the cell. For large lakes the value is quite
+c slow, for small lakes it approaches the reference value,
+c effref. For non-lake points it is a function of the
+c gradient as in Miller et al. 1994. This is fairly rough
+c and could be improved with considerations of sinuosity or
+c stream order for example.
+c
+c Invoke the top half of this if statement if you want the volume
+c of the lake to impact the river discharge velocity. It is unique
+c to each lake and should be studied before use
+c
+c       if((larea(i,j) .gt. 0.) .and.
+c    *     (voll(ii,jj) .gt. 0.))then
+c        vollocal = 1.*area(j)
+c        volref = sqrt(vollocal/volt(iii,jjj))
+c        effvel = min(effref,0.1*effref*volref)
+c        effvel = min(effref,0.08*effref*volref)
+c        effvel = max(effvel,1.0e-02)
+c       else                         !non-lake
+         ic = max(dem(i,j)-dem(i2,j2),1.)/dist
+         io = ioo/(dx/dy)   !scale reference gradient to latitude
+         effvel = effref*sqrt(ic/io)
+         effvel = min(effvel,3.0)
+c       endif
+c
+c calculate fluxout of each cell and send it as fluxin to
+c either the cell downstream if it is not a lake downstream
+c or to the outlet location. The fluxout of the cell which
+c corresponds to the sill is calculated for only that water 
+c volume in excess of the volume required to fill the lake.
+c
+c       effvel = 0.5 !alternatively could set velocity to a  constant
+c
+         fluxout(i,j) = max((voll(i,j)-volt(i,j))*
+     *                  (effvel/dist),0.)
+         fluxout(i,j) = max(min(fluxout(i,j),
+     *           sfluxin(i,j) + temp(i,j) +
+     *           ((voll(i,j)-volt(i,j))/(delt*2.))),0.)
+c
+c Truncate fluxout if too small for computation. 
+c
+         if(fluxout(i,j)/area(i,j) .lt. dveps) then 
+          fluxout(i,j) = 0. 
+         endif
+         !i3 = i2-(istart-1)
+         !j3 = j2-(jstart-1)
+         if((i2.gt.0).and.(i2.le.nc).and.
+     *      (j2.gt.0).and.(j2.le.nr)) then
+          sfluxin(i2,j2) =
+     *    sfluxin(i2,j2) + fluxout(i,j)
+         endif
+c
+c--------------------------------------------------------------
+c Adjust height of water column in each cell using the cellular
+c automata. Distribute water height within a lake basin only
+c This flattens the lake surface so that there are no hills or
+c valleys due to differences in the local water budget.
+c
+        if((laket .eq. 0) .and. ((ii .ne. 0).and. (jj.ne.0)))then
+c
+         if((outelv(i,j) .gt. dem(i,j)) .and.
+     *     (voll(ii,jj) .lt.
+     *      volt(ii,jj)))then
+c
+         if((voll(ii,jj) .ge. 0.).and.
+     *      (sillh(i,j) .gt. 0.))then
+c
+          tmpdir2 = 0
+          tmph = outelv(i,j)
+!!!! NEED TO FIGURE OUT THESE I3/J3 COORDINATES         
+!!!! I THINK THIS IS THE COORDINATES OF THE 8 NEIGHBOR CELLS
+           do k2 = 1,8
+            !j3 = (j + joff(k2))-(jstart-1)
+            !i3 = (i + ioff(k2))-(istart-1)
+            j2 = j + joff(k2)
+            i2 = i + ioff(k2)
+
+            if((outelv(i2,j2) .lt. outelv(i,j)) .and.
+     *        (sillh(i2,j2) .eq. sillh(i,j)))then
+             if(outelv(i2,j2) .lt. tmph)then
+              tmpdir2 = k2
+              tmph = outelv(i2,j2)
+             endif
+            endif
+           enddo
+c
+          if(tmpdir2 .ne. 0.)then
+c
+           !j3 = (j + joff(tmpdir2))-(jstart-1)
+           !i3 = (i + ioff(tmpdir2))-(istart-1)
+           j2 = j + joff(tmpdir2)
+           i2 = i + ioff(tmpdir2)
+c
+           gridif = min(max((outelv(i,j) -
+     *               outelv(i2,j2)),0.),
+     *               max((outelv(i,j) - dem(i,j)),0.))
+           if(abs(gridif) .lt. grideps) then
+            gridif = 0.
+           endif
+           gridif = gridif*area(i,j)*0.5  !move only 0.5 of difference
+c
+           outelv(i2,j2) = outelv(i2,j2) +
+     *           gridif/area(i2,j2)
+           outelv(i,j) = outelv(i,j) -
+     *           gridif/area(i,j)
+c
+          endif
+c
+         else
+          larea(i,j) = 0.
+          outelv(i,j) = dem(i,j)
+          areat(ii,jj) = 0.
+         endif                !voll(i2,j2) .ge. 0.
+         endif                !outelv .gt. dem
+c        endif
+c
+c Set lake area = either; 1 if depth is greater than 1 meter, to
+c a % of the lake cell equal to the depth of water, or to 0. if
+c depth = 0.  depth = outelv-grid
+c Adjust the total lake area (areat) to represent current larea.
+c Do this by first subtracting current larea from total then
+c adding new larea to total. If larea = 0. area added = 0.
+c
+         if((outnewi(i,j) .gt. 0.) .and.
+     *     (voll(ii,jj) .lt. volt(ii,jj)))then
+c
+          if((voll(ii,jj) .gt. 0.) .and.
+     *       (sillh(i,j) .gt. 0.))then
+c
+          ! These are just the outlets 
+!           ix = min(max(int(outnewi(i,j)-(istart-1)),1),incf)
+!           jx = min(max(int(outnewj(i,j)-(jstart-1)),1),inrf)
+           areat(ii,jj) = max(areat(ii,jj) - area(i,j)*
+     *         larea(i,j),0.)
+           larea(i,j) = max(min(outelv(i,j)-
+     *         dem(i,j),1.),0.)
+           areat(ii,jj) = max(areat(ii,jj) + area(i,j)*
+     *         larea(i,j),0.) !previous
+          else
+           larea(i,j) = 0.
+           outelv(i,j) = dem(i,j)
+           areat(ii,jj) = 0.
+          endif
+         endif
+c
+       laream(i,j) = (laream(i,j)+((outelv(i,j)-dem(i,j))
+     *                        /(ndaypm(imon)*nspday)))
+       if(outelv(i,j)-dem(i,j) .lt. 0.1)then
+        laream(i,j) = 0.
+       endif
+c
+c     endif        !iday
+      endif        !laket = 0
+c
+       sfluxout(i,j,imon) = (sfluxout(i,j,imon)+fluxout(i,j)
+     *                        /(ndaypm(imon)*nspday))
+c       
+      endif              !endif for limiting calculation to a basin
+c
+ 111    continue
+ 121   continue          !end fluxout loop
+c
+c      write(38,*)'areat  = ',areat(2343-(istart-1),969-(jstart-1))/1.e+6
 c
 c end of flux calculations
 c
