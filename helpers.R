@@ -165,8 +165,8 @@ fpwa <- function(gridx, gridy, dem, ldd, mask) {
 ###############################################################################
 ## Calls rhydra fortran routine
 ## Should be able to eliminate converg, laket
-rhydra <- function(gridx, gridy, nyrs, ndays, 
-                   startyear, converg = 1, laket = 0, spin = 1,
+rhydra <- function(gridx, gridy, nyrs, ndays, startyear, 
+                   res = 30, converg = 1, laket = 0, spin = 1,
                    dem, mask, area, rivdir, mflac,
                    outnewi, outnewj, basin, 
                    prcpi, evapi, runin, drainin) 
@@ -176,6 +176,7 @@ rhydra <- function(gridx, gridy, nyrs, ndays,
                    nc = as.integer(gridx), nr = as.integer(gridy),
                    nyrs = as.integer(nyrs), ndays = as.integer(ndays),
                    startyear = as.integer(startyear), 
+                   res = as.integer(res),
                    converg = as.integer(converg), 
                    laket = as.integer(laket), 
                    spin = as.integer(spin),
